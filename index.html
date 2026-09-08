@@ -1,0 +1,1928 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Analytix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+  html,body{margin:0}
+  #appFrame{position:fixed;inset:0;width:100%;height:100%;border:0;z-index:1;background:#F4F6F8}
+  body.app-open{overflow:hidden}
+  #backBtn{position:fixed;right:16px;bottom:16px;z-index:5;display:inline-flex;align-items:center;gap:7px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;font-weight:600;color:#fff;background:rgba(15,19,25,.88);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:9px 15px;cursor:pointer;box-shadow:0 10px 26px -10px rgba(0,0,0,.45);backdrop-filter:blur(6px)}
+  #backBtn:hover{background:#0f1319}
+  #backBtn[hidden]{display:none}
+</style>
+<style>
+  :root{
+    /* light — crisp white / near-black with an electric-blue accent */
+    --bg:#F4F6F8;
+    --surface:#FFFFFF;
+    --surface-2:#F1F4F7;
+    --ink:#0F1319;
+    --ink-soft:#2B313A;
+    --muted:#59616C;
+    --faint:#8A929C;
+    --line:#E5E8EC;
+    --line-strong:#D3D8DE;
+    --accent:#1C5EF2;        /* electric blue / kept */
+    --accent-deep:#1447C4;
+    --accent-wash:#E4ECFF;
+    --ghost:#AAB1BB;         /* forgotten data */
+    --ghost-wash:#DEE3E9;
+    --good:#12915A;
+    --shadow:0 1px 2px rgba(16,22,30,.05), 0 12px 30px -18px rgba(16,22,30,.24);
+    --shadow-lift:0 2px 4px rgba(16,22,30,.06), 0 26px 50px -24px rgba(16,22,30,.30);
+    --maxw:1180px;
+  }
+  :root:not([data-theme="light"]){
+    @media (prefers-color-scheme: dark){
+      --bg:#0B0D10;
+      --surface:#12151A;
+      --surface-2:#181C22;
+      --ink:#F1F3F6;
+      --ink-soft:#C9CED6;
+      --muted:#8A929D;
+      --faint:#616872;
+      --line:#242A31;
+      --line-strong:#323942;
+      --accent:#4C86FF;
+      --accent-deep:#2F6BFF;
+      --accent-wash:#16233D;
+      --ghost:#48505B;
+      --ghost-wash:#1E242C;
+      --good:#3FBF7A;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 16px 34px -18px rgba(0,0,0,.6);
+      --shadow-lift:0 2px 6px rgba(0,0,0,.4), 0 30px 60px -26px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0B0D10;
+    --surface:#12151A;
+    --surface-2:#181C22;
+    --ink:#F1F3F6;
+    --ink-soft:#C9CED6;
+    --muted:#8A929D;
+    --faint:#616872;
+    --line:#242A31;
+    --line-strong:#323942;
+    --accent:#4C86FF;
+    --accent-deep:#2F6BFF;
+    --accent-wash:#16233D;
+    --ghost:#48505B;
+    --ghost-wash:#1E242C;
+    --good:#3FBF7A;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 16px 34px -18px rgba(0,0,0,.6);
+    --shadow-lift:0 2px 6px rgba(0,0,0,.4), 0 30px 60px -26px rgba(0,0,0,.7);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Hanken Grotesk",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    margin:0;
+    overflow-x:hidden;
+  }
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 28px}
+  h1,h2,h3{font-family:"Archivo",sans-serif;text-wrap:balance;line-height:1.04;letter-spacing:-.01em;margin:0}
+  a{color:inherit}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+  .tnum{font-variant-numeric:tabular-nums}
+  .eyebrow{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--accent-deep);font-weight:500;
+  }
+  :root[data-theme="dark"] .eyebrow, :root:not([data-theme="light"]) .eyebrow{}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .eyebrow{color:var(--accent)}}
+  :root[data-theme="dark"] .eyebrow{color:var(--accent)}
+
+  /* ---------- top bar ---------- */
+  header.nav{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;gap:20px;height:64px}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand .mark{width:26px;height:22px;flex:none}
+  .wordmark{font-family:"Space Grotesk","Archivo",sans-serif;font-weight:700;font-size:20px;letter-spacing:-.03em;color:var(--ink)}
+  .brand .glyph{width:26px;height:26px;flex:none}
+  .nav-links{display:flex;gap:26px;align-items:center}
+  .nav-links a{font-size:14.5px;color:var(--muted);text-decoration:none;font-weight:500}
+  .nav-links a:hover{color:var(--ink)}
+  .nav-cta{display:flex;gap:12px;align-items:center}
+  @media(max-width:820px){.nav-links{display:none}}
+
+  .btn{
+    font-family:"Hanken Grotesk";font-weight:600;font-size:14.5px;
+    border-radius:9px;padding:10px 18px;border:1px solid transparent;cursor:pointer;
+    text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:transform .12s ease, background .16s ease, border-color .16s ease;white-space:nowrap;
+  }
+  .btn-primary{background:var(--accent);color:#fff;box-shadow:0 1px 0 rgba(0,0,0,.06)}
+  :root[data-theme="dark"] .btn-primary{color:#fff}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn-primary{color:#fff}}
+  .btn-primary:hover{background:var(--accent-deep);transform:translateY(-1px)}
+  .btn-ghost{background:transparent;color:var(--ink);border-color:var(--line-strong)}
+  .btn-ghost:hover{border-color:var(--accent);color:var(--accent-deep)}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn-ghost:hover{color:var(--accent)}}
+  :root[data-theme="dark"] .btn-ghost:hover{color:var(--accent)}
+
+  .icon-btn{background:transparent;border:1px solid var(--line-strong);color:var(--muted);width:38px;height:38px;border-radius:9px;display:grid;place-items:center;cursor:pointer;flex:none}
+  .icon-btn:hover{color:var(--ink);border-color:var(--accent)}
+
+  /* ---------- hero ---------- */
+  .hero{padding:64px 0 40px}
+  .hero-grid{display:grid;grid-template-columns:0.86fr 1.14fr;gap:52px;align-items:center}
+  @media(max-width:940px){.hero-grid{grid-template-columns:1fr;gap:34px}}
+  .tag{display:inline-flex;align-items:center;gap:9px;padding:6px 12px;border:1px solid var(--line-strong);border-radius:999px;font-size:12.5px;color:var(--muted);background:var(--surface);margin-bottom:22px}
+  .tag .dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+  h1.display{font-size:clamp(38px,5.4vw,60px);font-weight:800}
+  h1.display .kept{color:var(--accent);position:relative;white-space:nowrap}
+  .lede{font-size:clamp(17px,2vw,19.5px);color:var(--ink-soft);margin:22px 0 6px;max-width:33em}
+  .thesis{margin:22px 0 28px;padding-left:16px;border-left:3px solid var(--accent);font-size:16px;color:var(--muted)}
+  .thesis b{color:var(--ink);font-weight:600}
+  .hero-cta{display:flex;gap:13px;flex-wrap:wrap;align-items:center}
+  .hero-note{font-size:13px;color:var(--faint);margin-top:16px;display:flex;gap:8px;align-items:center}
+
+  /* chart card */
+  .chartcard{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-lift);overflow:hidden}
+  .chartcard-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px 20px 6px}
+  .chartcard-head .site{font-family:"IBM Plex Mono";font-size:13px;color:var(--muted)}
+  .chartcard-head .site b{color:var(--ink);font-weight:600}
+  .metric-big{font-family:"Archivo";font-weight:800;font-size:30px;letter-spacing:-.02em;line-height:1}
+  .metric-sub{font-size:12.5px;color:var(--muted);margin-top:3px}
+  .metric-sub .up{color:var(--good);font-weight:600}
+  .rangebar{display:flex;gap:6px;padding:2px 20px 12px}
+  .rangebar button{font-family:"IBM Plex Mono";font-size:11.5px;letter-spacing:.04em;padding:5px 10px;border-radius:7px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
+  .rangebar button[aria-pressed="true"]{background:var(--accent-wash);border-color:var(--accent);color:var(--accent-deep)}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .rangebar button[aria-pressed="true"]{color:var(--accent)}}
+  :root[data-theme="dark"] .rangebar button[aria-pressed="true"]{color:var(--accent)}
+  .chart-wrap{padding:0 8px 6px}
+  .chart-legend{display:flex;gap:20px;flex-wrap:wrap;padding:2px 20px 18px;font-size:12.5px;color:var(--muted)}
+  .chart-legend span{display:inline-flex;align-items:center;gap:8px}
+  .swatch{width:16px;height:0;border-top-width:3px;border-top-style:solid;display:inline-block;border-radius:2px}
+  .swatch.kept{border-color:var(--accent)}
+  .swatch.forgot{border-top-style:dashed;border-color:var(--ghost)}
+
+  /* ---------- logo strip ---------- */
+  .sources{padding:22px 0 8px}
+  .sources p{text-align:center;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-family:"IBM Plex Mono";margin:0 0 18px}
+  .source-row{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+  .chip{display:inline-flex;align-items:center;gap:9px;padding:9px 15px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-size:14px;font-weight:600;color:var(--ink-soft)}
+  .chip .cd{width:9px;height:9px;border-radius:2px;flex:none}
+  .chip.soon{color:var(--faint);border-style:dashed}
+  .chip.soon .tagsoon{font-family:"IBM Plex Mono";font-size:10px;letter-spacing:.08em;color:var(--faint);border:1px solid var(--line);border-radius:5px;padding:1px 5px;text-transform:uppercase}
+
+  /* ---------- generic section ---------- */
+  section{padding:72px 0}
+  .sec-head{max-width:44em;margin-bottom:44px}
+  .sec-head h2{font-size:clamp(27px,3.6vw,38px);font-weight:800;margin-top:12px}
+  .sec-head p{color:var(--muted);font-size:17px;margin:16px 0 0}
+
+  /* problem split */
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  @media(max-width:820px){.split{grid-template-columns:1fr}}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:26px;box-shadow:var(--shadow)}
+  .panel h3{font-size:19px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+  .panel .kicker{font-family:"IBM Plex Mono";font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+  .panel p{color:var(--muted);font-size:15px;margin:10px 0 0}
+  .sheet{margin-top:18px;border:1px solid var(--line);border-radius:10px;overflow:hidden;font-family:"IBM Plex Mono";font-size:12px}
+  .sheet .r{display:grid;grid-template-columns:26px 1fr 1fr 1fr;border-top:1px solid var(--line)}
+  .sheet .r:first-child{border-top:0}
+  .sheet .c{padding:6px 8px;border-left:1px solid var(--line);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sheet .c:first-child{border-left:0;color:var(--faint);text-align:center;background:var(--surface-2)}
+  .sheet .head .c{color:var(--ink-soft);background:var(--surface-2);font-weight:600}
+  .sheet .messy{color:var(--ghost)}
+  .decay{margin-top:20px}
+
+  /* how it works */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  @media(max-width:820px){.steps{grid-template-columns:1fr}}
+  .step{background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:24px;box-shadow:var(--shadow);position:relative;display:flex;flex-direction:column;gap:12px}
+  .step .num{font-family:"IBM Plex Mono";font-size:12px;color:var(--accent-deep);letter-spacing:.1em}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .step .num{color:var(--accent)}}
+  :root[data-theme="dark"] .step .num{color:var(--accent)}
+  .step .ic{width:44px;height:44px;border-radius:11px;background:var(--accent-wash);display:grid;place-items:center;color:var(--accent-deep)}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .step .ic{color:var(--accent)}}
+  :root[data-theme="dark"] .step .ic{color:var(--accent)}
+  .step h3{font-size:18px;font-weight:700}
+  .step p{color:var(--muted);font-size:14.5px;margin:0}
+  .step .pill{align-self:flex-start;margin-top:2px;font-family:"IBM Plex Mono";font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--faint)}
+  .step .pill.hero-pill{border-color:var(--accent);color:var(--accent-deep);background:var(--accent-wash)}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .step .pill.hero-pill{color:var(--accent)}}
+  :root[data-theme="dark"] .step .pill.hero-pill{color:var(--accent)}
+
+  /* screenshot demo */
+  .demo{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:center}
+  @media(max-width:900px){.demo{grid-template-columns:1fr}}
+  .demo-stage{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-lift);padding:20px;min-height:340px;display:flex;flex-direction:column}
+  .demo-toggle{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:4px;gap:4px;margin-bottom:18px;align-self:flex-start}
+  .demo-toggle button{font-family:"IBM Plex Mono";font-size:12px;letter-spacing:.04em;padding:7px 14px;border-radius:7px;border:0;background:transparent;color:var(--muted);cursor:pointer;font-weight:500}
+  .demo-toggle button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+  .shot{border:1px dashed var(--line-strong);border-radius:12px;background:var(--surface-2);padding:18px;flex:1;display:flex;flex-direction:column;justify-content:center;gap:14px}
+  .shot .cap{font-family:"IBM Plex Mono";font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+  .shot-metrics{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .shot-metric{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .shot-metric .l{font-size:11.5px;color:var(--muted)}
+  .shot-metric .v{font-family:"Archivo";font-weight:800;font-size:22px;letter-spacing:-.02em;margin-top:2px}
+  .shot-metric .v .hl{background:linear-gradient(transparent 62%, var(--accent-wash) 62%);padding:0 2px}
+  .extract-table{border:1px solid var(--line);border-radius:10px;overflow:hidden;font-family:"IBM Plex Mono";font-size:12px}
+  .extract-table .r{display:grid;grid-template-columns:1fr .7fr .8fr 1fr;border-top:1px solid var(--line)}
+  .extract-table .r:first-child{border-top:0}
+  .extract-table .c{padding:7px 9px;border-left:1px solid var(--line);color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .extract-table .c:first-child{border-left:0}
+  .extract-table .head .c{background:var(--surface-2);color:var(--muted);font-weight:600}
+  .found{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--good);font-weight:600;margin-top:4px}
+  .found .badge{font-family:"IBM Plex Mono";font-size:11px;background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good);padding:2px 8px;border-radius:6px;letter-spacing:.03em}
+  .demo-flow{display:flex;gap:8px;align-items:center;margin-top:16px;font-family:"IBM Plex Mono";font-size:11.5px;color:var(--muted);flex-wrap:wrap}
+  .demo-flow .s{padding:4px 9px;border:1px solid var(--line);border-radius:7px}
+  .demo-flow .s.on{border-color:var(--accent);color:var(--accent-deep);background:var(--accent-wash)}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .demo-flow .s.on{color:var(--accent)}}
+  :root[data-theme="dark"] .demo-flow .s.on{color:var(--accent)}
+
+  /* snapshots feature */
+  .snap{display:grid;grid-template-columns:1.05fr .95fr;gap:32px;align-items:center}
+  @media(max-width:900px){.snap{grid-template-columns:1fr}}
+  .snap-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-lift);padding:22px}
+  .snap-timeline{display:flex;gap:6px;align-items:flex-end;height:120px;margin:6px 0 14px}
+  .snap-bar{flex:1;background:var(--accent-wash);border:1px solid var(--accent);border-bottom:0;border-radius:5px 5px 0 0;position:relative;min-height:8px}
+  .snap-bar.ghost{background:var(--ghost-wash);border-color:var(--ghost);border-style:dashed}
+  .snap-scale{display:flex;justify-content:space-between;font-family:"IBM Plex Mono";font-size:10.5px;color:var(--faint)}
+  .snap-count{display:flex;align-items:baseline;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+  .snap-count .n{font-family:"Archivo";font-weight:900;font-size:34px;letter-spacing:-.02em;color:var(--accent)}
+  .snap-count .t{font-size:13.5px;color:var(--muted)}
+  .feature-list{list-style:none;padding:0;margin:22px 0 0;display:flex;flex-direction:column;gap:14px}
+  .feature-list li{display:flex;gap:13px;align-items:flex-start}
+  .feature-list .fi{flex:none;width:26px;height:26px;border-radius:8px;background:var(--accent-wash);color:var(--accent-deep);display:grid;place-items:center;margin-top:2px}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .feature-list .fi{color:var(--accent)}}
+  :root[data-theme="dark"] .feature-list .fi{color:var(--accent)}
+  .feature-list b{font-weight:700}
+  .feature-list span{color:var(--muted);font-size:14.5px}
+
+  /* AI ask */
+  .ask{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:26px;max-width:720px;margin:0 auto}
+  .ask .q{display:flex;gap:12px;align-items:flex-start;margin-bottom:16px}
+  .ask .avatar{width:30px;height:30px;border-radius:8px;flex:none;display:grid;place-items:center;font-family:"IBM Plex Mono";font-size:12px;font-weight:600}
+  .ask .avatar.you{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+  .ask .avatar.ai{background:var(--accent);color:#fff}
+  :root[data-theme="dark"] .ask .avatar.ai{color:#fff}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .ask .avatar.ai{color:#fff}}
+  .ask .bubble{font-size:15px}
+  .ask .q.user .bubble{color:var(--ink);font-weight:600}
+  .ask .q.bot .bubble{color:var(--ink-soft)}
+  .ask .bubble .hl{color:var(--accent-deep);font-weight:600}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .ask .bubble .hl{color:var(--accent)}}
+  :root[data-theme="dark"] .ask .bubble .hl{color:var(--accent)}
+
+  /* pricing */
+  .pricing{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:stretch}
+  @media(max-width:820px){.pricing{grid-template-columns:1fr}}
+  .price{background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:26px;display:flex;flex-direction:column;box-shadow:var(--shadow)}
+  .price.feature{border-color:var(--accent);box-shadow:var(--shadow-lift);position:relative}
+  .price .badge2{position:absolute;top:-11px;left:26px;background:var(--accent);color:#fff;font-family:"IBM Plex Mono";font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding:3px 10px;border-radius:6px}
+  :root[data-theme="dark"] .price .badge2{color:#fff}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .price .badge2{color:#fff}}
+  .price h3{font-size:17px;font-weight:700}
+  .price .amt{font-family:"Archivo";font-weight:900;font-size:38px;letter-spacing:-.02em;margin:12px 0 2px}
+  .price .amt small{font-family:"Hanken Grotesk";font-weight:500;font-size:14px;color:var(--muted);letter-spacing:0}
+  .price .desc{color:var(--muted);font-size:13.5px;min-height:38px}
+  .price ul{list-style:none;padding:0;margin:16px 0 22px;display:flex;flex-direction:column;gap:9px;font-size:14px;color:var(--ink-soft)}
+  .price li{display:flex;gap:9px;align-items:flex-start}
+  .price li svg{flex:none;margin-top:3px;color:var(--accent)}
+  .price .btn{justify-content:center;margin-top:auto}
+  .storage-note{margin-top:22px;font-size:13.5px;color:var(--muted);text-align:center;max-width:52em;margin-left:auto;margin-right:auto}
+
+  /* closing */
+  .closing{background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow-lift);padding:clamp(34px,6vw,64px);text-align:center;position:relative;overflow:hidden}
+  .closing h2{font-size:clamp(28px,4.4vw,46px);font-weight:900}
+  .closing h2 .kept{color:var(--accent)}
+  .closing p{color:var(--muted);font-size:17px;max-width:38em;margin:18px auto 26px}
+  .closing .hero-cta{justify-content:center}
+
+  footer{border-top:1px solid var(--line);margin-top:40px;padding:30px 0 46px}
+  .foot{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:center;font-size:13.5px;color:var(--muted)}
+  .foot .brand{font-size:16px;color:var(--ink)}
+  .draft{font-family:"IBM Plex Mono";font-size:11.5px;color:var(--faint);border:1px solid var(--line);border-radius:7px;padding:4px 9px}
+
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="site">
+<header class="nav">
+  <div class="wrap nav-in">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 30 26" fill="none" aria-hidden="true">
+        <rect x="0" y="16" width="5" height="10" rx="1.4" fill="var(--faint)"/>
+        <rect x="7" y="11" width="5" height="15" rx="1.4" fill="var(--muted)"/>
+        <rect x="14" y="6" width="5" height="20" rx="1.4" fill="var(--ink)"/>
+        <rect x="21" y="0" width="5" height="26" rx="1.4" fill="var(--accent)"/>
+      </svg>
+      <span class="wordmark">analytix</span>
+    </div>
+    <nav class="nav-links">
+      <a href="#problem">The problem</a>
+      <a href="#how">How it works</a>
+      <a href="#extract">Screenshot import</a>
+      <a href="#history">Your history</a>
+      <a href="#pricing">Pricing</a>
+    </nav>
+    <div class="nav-cta">
+      <button class="icon-btn" id="themeToggle" aria-label="Toggle light and dark theme" title="Toggle theme">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
+      </button>
+      <a href="#pricing" class="btn btn-primary">Start free</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <span class="tag"><span class="dot"></span> Analytics history vault</span>
+        <h1 class="display">Your analytics shouldn't <span class="kept">disappear</span> after 30 days.</h1>
+        <p class="lede">Vercel, Plausible and the rest only remember the last month or two. Analytix connects to them, keeps every day forever, and turns your scattered exports into one clean, searchable history.</p>
+        <p class="thesis"><b>Vercel tells you what's happening. Analytix remembers what happened.</b></p>
+        <div class="hero-cta">
+          <a href="#pricing" class="btn btn-primary">Start free — keep 1 site
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+          <a href="#how" class="btn btn-ghost">See how it works</a>
+        </div>
+        <p class="hero-note">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6z"/></svg>
+          No tracking script. Your visitors never touch us — only your own numbers do.
+        </p>
+      </div>
+
+      <div class="chartcard" id="heroCard">
+        <div class="chartcard-head">
+          <div>
+            <div class="site">leahbuilds<b>.dev</b> · monthly visitors</div>
+            <div class="metric-big tnum">184,392</div>
+            <div class="metric-sub">14 months kept · <span class="up">▲ 37%</span> since March</div>
+          </div>
+          <div style="text-align:right">
+            <div class="site" style="margin-bottom:4px">Vercel keeps</div>
+            <div class="mono" style="font-size:13px;color:var(--ghost)">30 days</div>
+          </div>
+        </div>
+        <div class="rangebar" role="group" aria-label="Time range">
+          <button data-range="3" aria-pressed="false">3M</button>
+          <button data-range="6" aria-pressed="false">6M</button>
+          <button data-range="14" aria-pressed="true">14M</button>
+        </div>
+        <div class="chart-wrap">
+          <svg id="heroChart" viewBox="0 0 720 320" width="100%" role="img" aria-label="Line chart of monthly visitors over 14 months. Everything older than the last 30 days is data your analytics provider no longer keeps; Analytix keeps the full line."></svg>
+        </div>
+        <div class="chart-legend">
+          <span><i class="swatch kept"></i> Kept by Analytix</span>
+          <span><i class="swatch forgot"></i> Forgotten by your provider</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SOURCES -->
+  <div class="sources wrap">
+    <p>Bring history in from anywhere</p>
+    <div class="source-row">
+      <span class="chip"><span class="cd" style="background:#000"></span>Vercel</span>
+      <span class="chip"><span class="cd" style="background:#F6821F"></span>Google Analytics</span>
+      <span class="chip"><span class="cd" style="background:#F38020"></span>Cloudflare</span>
+      <span class="chip"><span class="cd" style="background:#6C5CE7"></span>Plausible</span>
+      <span class="chip"><span class="cd" style="background:#2B9348"></span>Umami</span>
+      <span class="chip"><span class="cd" style="background:#635BFF"></span>Stripe</span>
+      <span class="chip"><span class="cd" style="background:var(--muted)"></span>CSV / JSON</span>
+      <span class="chip soon"><span class="cd" style="background:var(--faint)"></span>Shopify <span class="tagsoon">soon</span></span>
+    </div>
+  </div>
+
+  <!-- PROBLEM -->
+  <section id="problem">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">The 30-day cliff</span>
+        <h2>Right now your history dies twice.</h2>
+        <p>First your provider forgets it. Then your backup — a Google Sheet you dread opening — falls apart. Analytix exists because both of those already happened to us.</p>
+      </div>
+      <div class="split">
+        <div class="panel">
+          <span class="kicker">Problem 01 · The provider</span>
+          <h3>Vercel remembers a month. That's it.</h3>
+          <p>On the free plan you get a rolling 30-day window. Every day, the oldest day silently drops off the edge. Launch metrics, your first viral spike, last quarter — gone, with no export and no way back.</p>
+          <div class="decay">
+            <svg viewBox="0 0 340 92" width="100%" role="img" aria-label="Illustration of older data fading away as only the last 30 days remain">
+              <g font-family="IBM Plex Mono" font-size="9">
+                <text x="0" y="86" fill="var(--faint)">14 months ago</text>
+                <text x="340" y="86" text-anchor="end" fill="var(--faint)">today</text>
+              </g>
+              <g>
+                <rect x="0" y="20" width="14" height="52" rx="2" fill="var(--ghost)" opacity="0.18"/>
+                <rect x="20" y="26" width="14" height="46" rx="2" fill="var(--ghost)" opacity="0.24"/>
+                <rect x="40" y="18" width="14" height="54" rx="2" fill="var(--ghost)" opacity="0.3"/>
+                <rect x="60" y="30" width="14" height="42" rx="2" fill="var(--ghost)" opacity="0.36"/>
+                <rect x="80" y="14" width="14" height="58" rx="2" fill="var(--ghost)" opacity="0.42"/>
+                <rect x="100" y="22" width="14" height="50" rx="2" fill="var(--ghost)" opacity="0.5"/>
+                <rect x="120" y="10" width="14" height="62" rx="2" fill="var(--ghost)" opacity="0.58"/>
+                <rect x="140" y="24" width="14" height="48" rx="2" fill="var(--ghost)" opacity="0.66"/>
+                <rect x="160" y="16" width="14" height="56" rx="2" fill="var(--ghost)" opacity="0.74"/>
+                <rect x="180" y="28" width="14" height="44" rx="2" fill="var(--ghost)" opacity="0.82"/>
+                <rect x="255" y="6" width="14" height="66" rx="2" fill="var(--accent)"/>
+                <rect x="275" y="18" width="14" height="54" rx="2" fill="var(--accent)"/>
+                <rect x="295" y="12" width="14" height="60" rx="2" fill="var(--accent)"/>
+                <rect x="315" y="22" width="14" height="50" rx="2" fill="var(--accent)"/>
+                <line x1="243" y1="2" x2="243" y2="76" stroke="var(--accent-deep)" stroke-width="1.4" stroke-dasharray="3 3"/>
+                <text x="238" y="14" text-anchor="end" font-family="IBM Plex Mono" font-size="9" fill="var(--accent-deep)">30d</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+        <div class="panel">
+          <span class="kicker">Problem 02 · The backup</span>
+          <h3>So it all gets smooshed into a spreadsheet.</h3>
+          <p>Copy the numbers by hand once a month, paste them into a sheet, hope you used the same columns as last time. Miss a month and there's a hole you can never fill.</p>
+          <div class="sheet" aria-label="A messy spreadsheet with inconsistent columns">
+            <div class="r head"><div class="c">#</div><div class="c">date</div><div class="c">visits</div><div class="c">notes??</div></div>
+            <div class="r"><div class="c">41</div><div class="c">Jun '26</div><div class="c">16800</div><div class="c messy">spike?</div></div>
+            <div class="r"><div class="c">42</div><div class="c">jul</div><div class="c messy">15,2k</div><div class="c messy">—</div></div>
+            <div class="r"><div class="c">43</div><div class="c messy">(missed)</div><div class="c messy"> </div><div class="c messy"> </div></div>
+            <div class="r"><div class="c">44</div><div class="c">8/26</div><div class="c">17900</div><div class="c messy">diff format</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how" style="background:var(--surface-2)">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Three ways in</span>
+        <h2>Get your numbers in once. Keep them for good.</h2>
+        <p>Connect a source and Analytix pulls the history for you. Already have exports? Drop them in. No export button? Screenshot it and let AI read it.</p>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="ic">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12h6M12 9v6"/><rect x="3" y="4" width="18" height="16" rx="3"/></svg>
+          </div>
+          <div class="num">A · recommended</div>
+          <h3>Connect a source</h3>
+          <p>Link Vercel, GA, Cloudflare or Plausible once. Analytix pulls a daily snapshot on its own — set it and forget it.</p>
+          <span class="pill hero-pill">Auto-fetches daily</span>
+        </div>
+        <div class="step">
+          <div class="ic">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4"/></svg>
+          </div>
+          <div class="num">B · one file</div>
+          <h3>Upload CSV or JSON</h3>
+          <p>Already export to a sheet? Drag the file in. Analytix reads the columns, maps them and backfills your whole timeline at once.</p>
+          <span class="pill">Auto-maps columns</span>
+        </div>
+        <div class="step">
+          <div class="ic">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M21 16l-5-5-4 4-2-2-4 4"/></svg>
+          </div>
+          <div class="num">C · the escape hatch</div>
+          <h3>Screenshot it</h3>
+          <p>No export? Paste a screenshot of any dashboard. Our AI reads the numbers off the image and turns them into clean, dated rows.</p>
+          <span class="pill">AI extraction</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREENSHOT DEMO -->
+  <section id="extract">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">The escape hatch, up close</span>
+        <h2>Drop in a screenshot. Get back a table.</h2>
+        <p>Some tools just won't let you export. So we made the messiest input the easiest: a picture of your dashboard becomes structured, dated data you can keep.</p>
+      </div>
+      <div class="demo">
+        <div class="demo-stage">
+          <div class="demo-toggle" role="group" aria-label="Before or after extraction">
+            <button data-view="before" aria-pressed="true">Screenshot in</button>
+            <button data-view="after" aria-pressed="false">Data out</button>
+          </div>
+
+          <div class="shot" id="viewBefore">
+            <span class="cap">dropped image · vercel-analytics-aug.png</span>
+            <div class="shot-metrics">
+              <div class="shot-metric"><div class="l">Visitors</div><div class="v"><span class="hl">17,904</span></div></div>
+              <div class="shot-metric"><div class="l">Page views</div><div class="v"><span class="hl">31,208</span></div></div>
+              <div class="shot-metric"><div class="l">Bounce rate</div><div class="v"><span class="hl">42.1%</span></div></div>
+              <div class="shot-metric"><div class="l">Top page</div><div class="v" style="font-size:16px">/projects</div></div>
+            </div>
+          </div>
+
+          <div class="shot" id="viewAfter" hidden>
+            <span class="cap">extracted · 30 dated rows</span>
+            <div class="extract-table">
+              <div class="r head"><div class="c">date</div><div class="c">visitors</div><div class="c">views</div><div class="c">top page</div></div>
+              <div class="r"><div class="c">Aug 26</div><div class="c">612</div><div class="c">1,004</div><div class="c">/projects</div></div>
+              <div class="r"><div class="c">Aug 25</div><div class="c">589</div><div class="c">972</div><div class="c">/</div></div>
+              <div class="r"><div class="c">Aug 24</div><div class="c">521</div><div class="c">861</div><div class="c">/blog</div></div>
+              <div class="r"><div class="c" style="color:var(--faint)">…</div><div class="c" style="color:var(--faint)">…</div><div class="c" style="color:var(--faint)">…</div><div class="c" style="color:var(--faint)">…</div></div>
+            </div>
+            <div class="found"><span class="badge">AI</span> Found 7 metrics across 30 days — ready to save.</div>
+          </div>
+
+          <div class="demo-flow">
+            <span class="s" id="f1">Drop</span>
+            <span>→</span>
+            <span class="s" id="f2">Read</span>
+            <span>→</span>
+            <span class="s" id="f3">Confirm</span>
+            <span>→</span>
+            <span class="s" id="f4">Kept</span>
+          </div>
+        </div>
+
+        <div class="demo-copy">
+          <ul class="feature-list">
+            <li><span class="fi"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span><b>Reads any dashboard.</b> Vercel, GA, a client's tool you don't control — if you can screenshot it, Analytix can read it.</span></li>
+            <li><span class="fi"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span><b>You confirm before it saves.</b> Every extracted number is shown for a quick check — nothing lands in your history until you say so.</span></li>
+            <li><span class="fi"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span><b>The original stays too.</b> The image is filed next to the data, so you always have the receipt.</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HISTORY / SNAPSHOTS -->
+  <section id="history" style="background:var(--surface-2)">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Why it compounds</span>
+        <h2>Every day it quietly takes a snapshot.</h2>
+        <p>Connect once and Analytix saves a dated snapshot of your numbers every single day. Even if your provider later wipes the past, your copy stays — and it keeps growing.</p>
+      </div>
+      <div class="snap">
+        <div class="snap-card">
+          <div class="site mono" style="font-size:12.5px;color:var(--muted);margin-bottom:8px">daily snapshots · leahbuilds.dev</div>
+          <div class="snap-timeline" id="snapTimeline" aria-hidden="true"></div>
+          <div class="snap-scale"><span>Jan '26</span><span>Apr</span><span>Aug</span></div>
+          <div class="snap-count">
+            <span class="n tnum">184,392</span>
+            <span class="t">data points preserved<br>since 4 January 2026</span>
+          </div>
+        </div>
+        <div>
+          <ul class="feature-list">
+            <li><span class="fi"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg></span><span><b>See real trends.</b> 6-month, 1-year and 3-year views — plus “this month vs. the same month last year.”</span></li>
+            <li><span class="fi"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span><span><b>Search your past.</b> Jump to any week you remember and pull the exact numbers, instantly.</span></li>
+            <li><span class="fi"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 11l4 4 4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg></span><span><b>Export anytime.</b> Clean CSV or a shareable report — your data leaves as easily as it came in.</span></li>
+          </ul>
+          <div class="ask" style="margin-top:24px">
+            <div class="q user">
+              <div class="avatar you">You</div>
+              <div class="bubble">How has my site done since launch?</div>
+            </div>
+            <div class="q bot">
+              <div class="avatar ai">A</div>
+              <div class="bubble">Since January you've had <span class="hl">184,392 visitors</span>. Traffic climbed <span class="hl">37%</span> between March and August, with your biggest spike in <span class="hl">June</span> — a 32% jump over May.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section id="pricing">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Pricing</span>
+        <h2>You're paying to keep your history — not to rent a hard drive.</h2>
+        <p>Analytix is priced on the thing that matters: making your data permanent, organized and yours. Extra storage is a cheap add-on, never the reason to sign up.</p>
+      </div>
+      <div class="pricing">
+        <div class="price">
+          <h3>Keeper</h3>
+          <div class="amt">$0<small> / forever</small></div>
+          <div class="desc">For one site you never want to lose.</div>
+          <ul>
+            <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> 1 connected site</li>
+            <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Daily auto-snapshots</li>
+            <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> CSV, JSON &amp; screenshot import</li>
+            <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> 1 GB history included</li>
+          </ul>
+          <a href="#" class="btn btn-ghost">Start free</a>
+        </div>
+        <div class="price feature">
+          <span class="badge2">Most sites</span>
+          <h3>Archivist</h3>
+          <div class="amt">$9<small> / month</small></div>
+          <div class="desc">For makers with a few projects and real history.</div>
+          <ul>
+            <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> 10 connected sites</li>
+            <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Multi-year trends &amp; comparisons</li>
+            <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Ask-AI over your whole history</li>
+            <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> 25 GB history included</li>
+          </ul>
+          <a href="#" class="btn btn-primary">Start 14-day trial</a>
+        </div>
+        <div class="price">
+          <h3>Studio</h3>
+          <div class="amt">$29<small> / month</small></div>
+          <div class="desc">For agencies keeping history for clients.</div>
+          <ul>
+            <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Unlimited sites</li>
+            <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Client workspaces &amp; branded reports</li>
+            <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Team access</li>
+            <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> 250 GB history included</li>
+          </ul>
+          <a href="#" class="btn btn-ghost">Talk to us</a>
+        </div>
+      </div>
+      <p class="storage-note">Need more room? Extra history is <b>$3 / 50 GB / month</b> — priced near cost, because storage is what makes the product possible, not what we're selling.</p>
+    </div>
+  </section>
+
+  <!-- CLOSING -->
+  <section>
+    <div class="wrap">
+      <div class="closing">
+        <span class="eyebrow">Start keeping</span>
+        <h2>Connect your data. Keep your history. <span class="kept">Understand your growth.</span></h2>
+        <p>Your first site is free forever. Two minutes to connect, and you'll never lose a day of it again.</p>
+        <div class="hero-cta">
+          <a href="#" class="btn btn-primary">Start free — no card
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+          <a href="#how" class="btn btn-ghost">See how it works</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 30 26" fill="none" aria-hidden="true" style="width:22px;height:19px">
+        <rect x="0" y="16" width="5" height="10" rx="1.4" fill="var(--faint)"/>
+        <rect x="7" y="11" width="5" height="15" rx="1.4" fill="var(--muted)"/>
+        <rect x="14" y="6" width="5" height="20" rx="1.4" fill="var(--ink)"/>
+        <rect x="21" y="0" width="5" height="26" rx="1.4" fill="var(--accent)"/>
+      </svg>
+      <span class="wordmark" style="font-size:16px">analytix</span>
+    </div>
+    <div>Never lose a day of your data again.</div>
+    <div class="draft">design draft · name is a placeholder</div>
+  </div>
+</footer>
+</div>
+<iframe id="appFrame" title="Analytix dashboard" hidden></iframe>
+<button id="backBtn" type="button" hidden>&#8592; Back to site</button>
+<template id="appDoc"><title>Analytix Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+  :root{
+    --bg:#F4F6F8;
+    --surface:#FFFFFF;
+    --surface-2:#F1F4F7;
+    --surface-3:#E9EDF2;
+    --ink:#0F1319;
+    --ink-soft:#2B313A;
+    --muted:#59616C;
+    --faint:#8A929C;
+    --line:#E5E8EC;
+    --line-strong:#D3D8DE;
+    --accent:#1C5EF2;
+    --accent-deep:#1447C4;
+    --accent-wash:#E4ECFF;
+    --ghost:#AAB1BB;
+    --ghost-wash:#DEE3E9;
+    --good:#12915A;
+    --good-wash:#DCF0E4;
+    --warn:#C67A12;
+    --crit:#D2453B;
+    --blue:#5B8DEF;
+    --violet:#6B7480;
+    --shadow:0 1px 2px rgba(16,22,30,.05), 0 10px 26px -18px rgba(16,22,30,.22);
+    --shadow-lift:0 2px 4px rgba(16,22,30,.06), 0 22px 46px -24px rgba(16,22,30,.28);
+  }
+  :root:not([data-theme="light"]){
+    @media (prefers-color-scheme: dark){
+      --bg:#0B0D10; --surface:#12151A; --surface-2:#181C22; --surface-3:#20252C;
+      --ink:#F1F3F6; --ink-soft:#C9CED6; --muted:#8A929D; --faint:#616872;
+      --line:#242A31; --line-strong:#323942; --accent:#4C86FF; --accent-deep:#2F6BFF;
+      --accent-wash:#16233D; --ghost:#48505B; --ghost-wash:#1E242C; --good:#3FBF7A; --good-wash:#12261C;
+      --warn:#D9A23E; --crit:#E86A5E; --blue:#7FA6FF; --violet:#98A2AD;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 16px 34px -18px rgba(0,0,0,.6);
+      --shadow-lift:0 2px 6px rgba(0,0,0,.4), 0 30px 60px -26px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0B0D10; --surface:#12151A; --surface-2:#181C22; --surface-3:#20252C;
+    --ink:#F1F3F6; --ink-soft:#C9CED6; --muted:#8A929D; --faint:#616872;
+    --line:#242A31; --line-strong:#323942; --accent:#4C86FF; --accent-deep:#2F6BFF;
+    --accent-wash:#16233D; --ghost:#48505B; --ghost-wash:#1E242C; --good:#3FBF7A; --good-wash:#12261C;
+    --warn:#D9A23E; --crit:#E86A5E; --blue:#7FA6FF; --violet:#98A2AD;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 16px 34px -18px rgba(0,0,0,.6);
+    --shadow-lift:0 2px 6px rgba(0,0,0,.4), 0 30px 60px -26px rgba(0,0,0,.7);
+  }
+
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--ink);font-family:"Hanken Grotesk",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;margin:0}
+  h1,h2,h3,h4{font-family:"Archivo",sans-serif;margin:0;letter-spacing:-.01em;line-height:1.1}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+  .tnum{font-variant-numeric:tabular-nums}
+  a{color:inherit;text-decoration:none}
+  button{font-family:inherit}
+
+  .app{display:grid;grid-template-columns:236px 1fr;min-height:100vh}
+  @media(max-width:860px){.app{grid-template-columns:1fr}}
+
+  /* sidebar */
+  .side{background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;z-index:30}
+  @media(max-width:860px){.side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}}
+  .side-brand{display:flex;align-items:center;gap:10px;padding:20px 20px 18px}
+  .side-brand .mark{width:24px;height:21px;flex:none}
+  .wordmark{font-family:"Space Grotesk","Archivo",sans-serif;font-weight:700;font-size:19px;letter-spacing:-.03em;color:var(--ink)}
+  .site-wrap{position:relative;margin:0 14px 14px}
+  .side-site{border:1px solid var(--line);border-radius:10px;background:var(--surface-2);padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;width:100%;text-align:left}
+  .side-site:hover{border-color:var(--line-strong)}
+  .side-site .s-name{font-weight:600;font-size:13.5px;color:var(--ink)}
+  .side-site .s-sub{font-family:"IBM Plex Mono";font-size:10.5px;color:var(--faint)}
+  .menu{position:absolute;left:0;right:0;top:calc(100% + 6px);background:var(--surface);border:1px solid var(--line-strong);border-radius:11px;box-shadow:var(--shadow-lift);padding:6px;z-index:40}
+  .menu button{display:flex;flex-direction:column;gap:1px;width:100%;text-align:left;background:transparent;border:0;border-radius:8px;padding:8px 10px;cursor:pointer;color:var(--ink)}
+  .menu button:hover{background:var(--surface-2)}
+  .menu button .mn{font-weight:600;font-size:13px}
+  .menu button .ms{font-family:"IBM Plex Mono";font-size:10px;color:var(--faint)}
+  .menu .div{height:1px;background:var(--line);margin:5px 4px}
+  .menu .add{color:var(--accent-deep);font-weight:600;font-size:12.5px;font-family:"Hanken Grotesk"}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .menu .add{color:var(--accent)}}
+  :root[data-theme="dark"] .menu .add{color:var(--accent)}
+
+  .nav{display:flex;flex-direction:column;gap:2px;padding:6px 12px;flex:1;overflow-y:auto}
+  .nav a{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:9px;color:var(--muted);font-size:14px;font-weight:500;cursor:pointer}
+  .nav a svg{flex:none;color:var(--faint)}
+  .nav a:hover{background:var(--surface-2);color:var(--ink)}
+  .nav a.active{background:var(--accent-wash);color:var(--accent-deep);font-weight:600}
+  .nav a.active svg{color:var(--accent-deep)}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .nav a.active{color:var(--accent)}:root:not([data-theme="light"]) .nav a.active svg{color:var(--accent)}}
+  :root[data-theme="dark"] .nav a.active{color:var(--accent)}
+  :root[data-theme="dark"] .nav a.active svg{color:var(--accent)}
+  .nav .grp{font-family:"IBM Plex Mono";font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:14px 12px 4px}
+  .storage{margin:8px 14px 16px;border:1px solid var(--line);border-radius:11px;padding:13px 14px;background:var(--surface-2)}
+  .storage .lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:8px}
+  .storage .lbl b{color:var(--ink);font-family:"IBM Plex Mono";font-weight:600}
+  .meter{height:7px;border-radius:99px;background:var(--surface-3);overflow:hidden}
+  .meter i{display:block;height:100%;width:34%;background:linear-gradient(90deg,var(--accent),var(--accent-deep));border-radius:99px}
+  .storage .hint{font-size:11px;color:var(--faint);margin-top:8px}
+
+  /* main */
+  .main{min-width:0;display:flex;flex-direction:column}
+  .topbar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:14px 26px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .tb-left{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .tb-left h1{font-size:22px;font-weight:800}
+  .demo-chip{font-family:"IBM Plex Mono";font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);border:1px solid var(--warn);border-radius:6px;padding:3px 8px;background:color-mix(in srgb,var(--warn) 12%,transparent)}
+  .tb-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .ranges{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:3px;gap:2px}
+  .ranges button{font-family:"IBM Plex Mono";font-size:11.5px;letter-spacing:.03em;padding:6px 11px;border-radius:6px;border:0;background:transparent;color:var(--muted);cursor:pointer;font-weight:500}
+  .ranges button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+  .btn{font-family:"Hanken Grotesk";font-weight:600;font-size:13.5px;border-radius:9px;padding:8px 14px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+  .btn:hover{border-color:var(--accent);color:var(--accent-deep)}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn:hover{color:var(--accent)}}
+  :root[data-theme="dark"] .btn:hover{color:var(--accent)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover{background:var(--accent-deep);color:#fff}
+  .btn.sm{padding:6px 11px;font-size:12.5px}
+  .btn.ghost{background:transparent}
+  .btn:disabled{opacity:.55;cursor:default}
+  .icon-btn{width:36px;height:36px;border-radius:9px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted);display:grid;place-items:center;cursor:pointer}
+  .icon-btn:hover{color:var(--ink);border-color:var(--accent)}
+
+  .content{padding:24px 26px 40px;display:flex;flex-direction:column;gap:20px;max-width:1240px;width:100%}
+  .view{display:flex;flex-direction:column;gap:20px}
+  .view[hidden]{display:none}
+  .view-intro{font-size:14px;color:var(--muted);margin:-4px 0 0;max-width:60ch}
+
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  @media(max-width:1080px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:520px){.kpis{grid-template-columns:1fr}}
+  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px}
+  .kpi .k-top{display:flex;align-items:center;justify-content:space-between}
+  .kpi .k-lbl{font-size:12.5px;color:var(--muted);font-weight:500}
+  .kpi .k-delta{font-family:"IBM Plex Mono";font-size:11.5px;font-weight:600;padding:2px 7px;border-radius:6px}
+  .kpi .k-delta.up{color:var(--good);background:var(--good-wash)}
+  .kpi .k-delta.down{color:var(--crit);background:color-mix(in srgb,var(--crit) 13%,transparent)}
+  .kpi .k-val{font-family:"Archivo";font-weight:800;font-size:29px;letter-spacing:-.02em;line-height:1}
+  .kpi .k-spark{height:34px;margin-top:2px}
+  .kpi .k-foot{font-size:11.5px;color:var(--faint)}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:20px}
+  .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:6px;flex-wrap:wrap}
+  .card-head h3{font-size:17px;font-weight:700}
+  .card-head .sub{font-size:12.5px;color:var(--muted);margin-top:3px}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);align-items:center}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .lg-line{width:15px;height:0;border-top-width:3px;border-top-style:solid;border-radius:2px;display:inline-block}
+  .toggle-yoy{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);cursor:pointer;user-select:none;background:transparent;border:0}
+  .switch{width:34px;height:19px;border-radius:99px;background:var(--surface-3);border:1px solid var(--line-strong);position:relative;transition:background .15s;flex:none}
+  .switch::after{content:"";position:absolute;top:1.5px;left:1.5px;width:14px;height:14px;border-radius:50%;background:var(--faint);transition:transform .15s,background .15s}
+  .toggle-yoy[aria-pressed="true"] .switch,.tgl[aria-pressed="true"] .switch{background:var(--accent-wash);border-color:var(--accent)}
+  .toggle-yoy[aria-pressed="true"] .switch::after,.tgl[aria-pressed="true"] .switch::after{transform:translateX(15px);background:var(--accent)}
+
+  .maininfo{display:flex;gap:22px;align-items:baseline;flex-wrap:wrap;margin:2px 0 4px}
+  .maininfo .big{font-family:"Archivo";font-weight:900;font-size:34px;letter-spacing:-.02em}
+  .maininfo .cmp{font-size:13px;color:var(--muted)}
+  .maininfo .cmp b.up{color:var(--good)}
+
+  .row2{display:grid;grid-template-columns:1.15fr .85fr;gap:20px}
+  @media(max-width:960px){.row2{grid-template-columns:1fr}}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;font-family:"IBM Plex Mono";font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:500;padding:0 0 10px;border-bottom:1px solid var(--line)}
+  th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
+  th.sortable{cursor:pointer;user-select:none}
+  th.sortable:hover{color:var(--accent-deep)}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) th.sortable:hover{color:var(--accent)}}
+  :root[data-theme="dark"] th.sortable:hover{color:var(--accent)}
+  th .arw{opacity:.5;font-size:9px}
+  td{padding:11px 0;border-bottom:1px solid var(--line);color:var(--ink-soft)}
+  tr:last-child td{border-bottom:0}
+  td.path{font-family:"IBM Plex Mono";font-size:12.5px;color:var(--ink)}
+  .barcell{position:relative}
+  .barcell .bar{position:absolute;left:0;bottom:4px;height:4px;border-radius:2px;background:var(--accent-wash)}
+  .trend{font-family:"IBM Plex Mono";font-size:11.5px}
+  .trend.up{color:var(--good)}.trend.down{color:var(--crit)}
+
+  .src{display:flex;flex-direction:column;gap:14px;margin-top:6px}
+  .src-item .top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
+  .src-item .top .nm{display:flex;align-items:center;gap:8px;color:var(--ink)}
+  .src-item .top .nm .dot{width:9px;height:9px;border-radius:3px;flex:none}
+  .src-item .top .vl{color:var(--muted);font-family:"IBM Plex Mono";font-size:12px}
+  .track{height:8px;border-radius:99px;background:var(--surface-3);overflow:hidden}
+  .track i{display:block;height:100%;border-radius:99px}
+
+  .cov{display:flex;flex-direction:column;gap:12px}
+  .cov-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(13px,1fr));gap:4px}
+  .cell{aspect-ratio:1;border-radius:3px;background:var(--accent);opacity:.85}
+  .cell.l2{opacity:.55}.cell.l1{opacity:.3}
+  .cell.miss{background:var(--ghost-wash);border:1px solid var(--line)}
+  .cov-foot{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);flex-wrap:wrap;gap:8px}
+  .cov-legend{display:flex;gap:6px;align-items:center;font-size:11px;color:var(--faint)}
+  .cov-legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+
+  .ask{background:linear-gradient(180deg,var(--accent-wash),transparent);border:1px solid var(--accent);border-radius:16px;padding:20px;box-shadow:var(--shadow)}
+  .ask .qbar{display:flex;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:10px 12px;margin-bottom:14px}
+  .ask .qbar svg{color:var(--accent);flex:none}
+  .ask .qbar input{border:0;background:transparent;color:var(--ink);font-family:inherit;font-size:14px;width:100%;outline:none}
+  .ask .qbar .go{font-family:"IBM Plex Mono";font-size:11px;color:var(--faint);border:1px solid var(--line);border-radius:6px;padding:3px 7px;flex:none;background:transparent;cursor:pointer}
+  .ask .qbar .go:hover{border-color:var(--accent);color:var(--accent)}
+  .ask .conv{display:flex;flex-direction:column;gap:12px}
+  .ask .msg{display:flex;gap:11px;align-items:flex-start}
+  .ask .msg .av{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-family:"IBM Plex Mono";font-weight:600;font-size:12px;flex:none}
+  .ask .msg .av.ai{background:var(--accent);color:#fff}
+  .ask .msg .av.you{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+  .ask .msg .txt{font-size:14px;color:var(--ink-soft);line-height:1.55}
+  .ask .msg.user .txt{color:var(--ink);font-weight:600}
+  .ask .msg .txt b{color:var(--ink)}
+  .ask .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .ask .chips button{font-size:12px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:6px 12px;cursor:pointer}
+  .ask .chips button:hover{border-color:var(--accent);color:var(--accent-deep)}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .ask .chips button:hover{color:var(--accent)}}
+  :root[data-theme="dark"] .ask .chips button:hover{color:var(--accent)}
+
+  /* import */
+  .imp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:900px){.imp-grid{grid-template-columns:1fr}}
+  .imp{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px}
+  .imp .ic{width:42px;height:42px;border-radius:11px;background:var(--accent-wash);display:grid;place-items:center;color:var(--accent-deep)}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .imp .ic{color:var(--accent)}}
+  :root[data-theme="dark"] .imp .ic{color:var(--accent)}
+  .imp h3{font-size:16px;font-weight:700}
+  .imp p{font-size:13.5px;color:var(--muted);margin:0;flex:1}
+  .dropzone{margin-top:6px;border:1.5px dashed var(--line-strong);border-radius:11px;padding:14px;text-align:center;font-size:12.5px;color:var(--faint);cursor:pointer;transition:border-color .15s,background .15s}
+  .dropzone:hover,.dropzone.drag{border-color:var(--accent);background:var(--accent-wash);color:var(--accent-deep)}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .dropzone:hover,:root:not([data-theme="light"]) .dropzone.drag{color:var(--accent)}}
+  :root[data-theme="dark"] .dropzone:hover,:root[data-theme="dark"] .dropzone.drag{color:var(--accent)}
+
+  /* connected sources */
+  .conn-list{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+  .conn{display:flex;align-items:center;gap:13px;padding:13px 15px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+  .conn .cd{width:11px;height:11px;border-radius:3px;flex:none}
+  .conn .info{flex:1;min-width:0}
+  .conn .info .n{font-weight:600;font-size:14px}
+  .conn .info .s{font-family:"IBM Plex Mono";font-size:11px;color:var(--faint)}
+  .conn .status{font-family:"IBM Plex Mono";font-size:11px;padding:3px 9px;border-radius:6px}
+  .conn .status.on{color:var(--good);background:var(--good-wash)}
+  .conn .status.off{color:var(--faint);background:var(--surface-2)}
+
+  /* settings */
+  .set-list{display:flex;flex-direction:column}
+  .set-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:1px solid var(--line)}
+  .set-row:last-child{border-bottom:0}
+  .set-row .l .t{font-weight:600;font-size:14px}
+  .set-row .l .d{font-size:12.5px;color:var(--muted)}
+  .set-row input[type=text],.set-row select{font-family:inherit;font-size:13.5px;padding:8px 11px;border:1px solid var(--line-strong);border-radius:9px;background:var(--surface-2);color:var(--ink);min-width:200px}
+  .tgl{background:transparent;border:0;cursor:pointer;padding:0}
+
+  /* reports */
+  .rep-list{display:flex;flex-direction:column;gap:10px}
+  .rep{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+  .rep .ic{width:36px;height:36px;border-radius:9px;background:var(--accent-wash);color:var(--accent-deep);display:grid;place-items:center;flex:none}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .rep .ic{color:var(--accent)}}
+  :root[data-theme="dark"] .rep .ic{color:var(--accent)}
+  .rep .info{flex:1;min-width:0}
+  .rep .info .n{font-weight:600;font-size:14px}
+  .rep .info .s{font-family:"IBM Plex Mono";font-size:11px;color:var(--faint)}
+
+  /* modal + toast */
+  .overlay{position:fixed;inset:0;background:rgba(10,13,18,.5);backdrop-filter:blur(3px);display:grid;place-items:center;z-index:100;padding:20px}
+  .overlay[hidden]{display:none}
+  .modal{background:var(--surface);border:1px solid var(--line-strong);border-radius:16px;box-shadow:var(--shadow-lift);width:min(560px,100%);max-height:88vh;overflow:auto;padding:24px}
+  .modal h3{font-size:19px;font-weight:800;margin-bottom:4px}
+  .modal .mdesc{font-size:13.5px;color:var(--muted);margin-bottom:18px}
+  .modal .mhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .modal .x{background:transparent;border:0;color:var(--faint);cursor:pointer;font-size:20px;line-height:1;padding:2px 6px;border-radius:7px}
+  .modal .x:hover{background:var(--surface-2);color:var(--ink)}
+  .modal textarea{width:100%;height:190px;font-family:"IBM Plex Mono";font-size:12px;line-height:1.55;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--ink-soft);padding:12px;resize:vertical;white-space:pre}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+  .source-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:480px){.source-grid{grid-template-columns:1fr}}
+  .source-opt{display:flex;align-items:center;gap:11px;padding:13px;border:1px solid var(--line);border-radius:11px;background:var(--surface);cursor:pointer;text-align:left}
+  .source-opt:hover{border-color:var(--accent);background:var(--accent-wash)}
+  .source-opt .cd{width:11px;height:11px;border-radius:3px;flex:none}
+  .source-opt .n{font-weight:600;font-size:13.5px}
+  .source-opt .s{font-size:11px;color:var(--faint);font-family:"IBM Plex Mono"}
+  .source-opt:disabled{opacity:.5;cursor:default}
+  .source-opt:disabled:hover{border-color:var(--line);background:var(--surface)}
+
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+  .toast{background:var(--ink);color:var(--bg);font-size:13.5px;font-weight:500;padding:11px 18px;border-radius:10px;box-shadow:var(--shadow-lift);display:flex;align-items:center;gap:9px;animation:tin .25s ease}
+  .toast svg{color:var(--accent)}
+  @keyframes tin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  .foot-note{font-size:12px;color:var(--faint);text-align:center;padding:8px 0 4px}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="side">
+    <div class="side-brand">
+      <svg class="mark" viewBox="0 0 30 26" fill="none" aria-hidden="true">
+        <rect x="0" y="16" width="5" height="10" rx="1.4" fill="var(--faint)"/>
+        <rect x="7" y="11" width="5" height="15" rx="1.4" fill="var(--muted)"/>
+        <rect x="14" y="6" width="5" height="20" rx="1.4" fill="var(--ink)"/>
+        <rect x="21" y="0" width="5" height="26" rx="1.4" fill="var(--accent)"/>
+      </svg>
+      <span class="wordmark">analytix</span>
+    </div>
+
+    <div class="site-wrap">
+      <button class="side-site" id="siteBtn" aria-haspopup="true" aria-expanded="false">
+        <span>
+          <span class="s-name" id="siteName">leahbuilds.dev</span>
+          <span class="s-sub" id="siteSub">3 sources · kept since Jan '25</span>
+        </span>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9l5 5 5-5"/></svg>
+      </button>
+      <div class="menu" id="siteMenu" hidden>
+        <button data-site="leahbuilds.dev" data-sub="3 sources · kept since Jan '25"><span class="mn">leahbuilds.dev</span><span class="ms">3 sources · 604 snapshots</span></button>
+        <button data-site="portfolio.leah.co" data-sub="1 source · kept since May '25"><span class="mn">portfolio.leah.co</span><span class="ms">1 source · 231 snapshots</span></button>
+        <button data-site="climb-notes.app" data-sub="2 sources · kept since Aug '25"><span class="mn">climb-notes.app</span><span class="ms">2 sources · 118 snapshots</span></button>
+        <div class="div"></div>
+        <button id="menuAddSite"><span class="mn add">+ Add a site</span></button>
+      </div>
+    </div>
+
+    <nav class="nav" id="nav">
+      <a data-view="overview" class="active"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg> Overview</a>
+      <a data-view="trends"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg> Trends</a>
+      <a data-view="history"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v16"/></svg> History table</a>
+      <div class="grp">Data</div>
+      <a data-view="snapshots"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 8l7-5 7 5"/><rect x="4" y="8" width="16" height="13" rx="2"/></svg> Snapshots</a>
+      <a data-view="import"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4"/></svg> Import</a>
+      <a data-view="sources"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg> Sources</a>
+      <div class="grp">Insights</div>
+      <a data-view="ask"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 3h5l1 4 3.5 1.5-1 3.5 2 3-3 2.5-1.5 3.5-3.5-1-3 1.5-2.5-3-3.5-1 1-3.5-1.5-3L6 7z"/></svg> Ask AI</a>
+      <a data-view="reports"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v5H4zM4 13h16v7H4z"/></svg> Reports</a>
+      <a data-view="settings"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2 2M17.1 17.1l2 2M19.1 4.9l-2 2M6.9 17.1l-2 2"/></svg> Settings</a>
+    </nav>
+
+    <div class="storage">
+      <div class="lbl"><span>History used</span><span><b>8.4</b> / 25 GB</span></div>
+      <div class="meter"><i></i></div>
+      <div class="hint">Archivist plan · ~19 months kept</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="tb-left">
+        <h1 id="viewTitle">Overview</h1>
+        <span class="demo-chip">Demo data</span>
+      </div>
+      <div class="tb-right">
+        <div class="ranges" id="rangeGroup" role="group" aria-label="Date range">
+          <button data-range="1">30D</button>
+          <button data-range="6">6M</button>
+          <button data-range="12">1Y</button>
+          <button data-range="20" aria-pressed="true">All</button>
+        </div>
+        <button class="btn" id="exportBtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 11l4 4 4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg> Export CSV</button>
+        <button class="btn primary" id="addSourceBtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg> Add source</button>
+        <button class="icon-btn" id="themeToggle" aria-label="Toggle theme" title="Toggle theme"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg></button>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- OVERVIEW -->
+      <section class="view" data-view="overview">
+        <div class="kpis" id="kpis"></div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h3>Visitors — full history kept</h3>
+              <div class="sub" id="ovSub">Monthly totals since Jan 2025 · your provider only kept the last 30 days</div>
+            </div>
+            <div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">
+              <button class="toggle-yoy" id="yoyToggle" aria-pressed="false"><span class="switch"></span> Compare to last year</button>
+              <div class="legend">
+                <span><i class="lg-line" style="border-color:var(--accent)"></i> This period</span>
+                <span id="lgYoy" hidden><i class="lg-line" style="border-color:var(--ghost);border-top-style:dashed"></i> Year before</span>
+              </div>
+            </div>
+          </div>
+          <div class="maininfo">
+            <span class="big tnum" id="ovTotal">312,840</span>
+            <span class="cmp" id="ovCmp">total visitors kept · <b class="up">▲ 41%</b> year over year</span>
+            <span class="cmp" id="ovBest">best month <b>Jun '26</b> · 16,800</span>
+          </div>
+          <svg id="mainChart" viewBox="0 0 960 300" width="100%" role="img" aria-label="Monthly visitors, with optional prior-year overlay."></svg>
+        </div>
+
+        <div class="row2">
+          <div class="card">
+            <div class="card-head"><div><h3>Top pages</h3><div class="sub">Last 30 days · vs. previous 30</div></div></div>
+            <table>
+              <thead><tr><th>Page</th><th class="num">Visitors</th><th class="num">Views</th><th class="num">Trend</th></tr></thead>
+              <tbody>
+                <tr><td class="path barcell">/projects<span class="bar" style="width:100%"></span></td><td class="num">6,204</td><td class="num">9,881</td><td class="num trend up">▲ 18%</td></tr>
+                <tr><td class="path barcell">/<span class="bar" style="width:78%"></span></td><td class="num">4,832</td><td class="num">7,410</td><td class="num trend up">▲ 9%</td></tr>
+                <tr><td class="path barcell">/blog/shipping-fast<span class="bar" style="width:52%"></span></td><td class="num">3,201</td><td class="num">4,090</td><td class="num trend up">▲ 64%</td></tr>
+                <tr><td class="path barcell">/about<span class="bar" style="width:31%"></span></td><td class="num">1,918</td><td class="num">2,344</td><td class="num trend down">▼ 4%</td></tr>
+                <tr><td class="path barcell">/pricing<span class="bar" style="width:22%"></span></td><td class="num">1,360</td><td class="num">1,902</td><td class="num trend up">▲ 12%</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card">
+            <div class="card-head"><div><h3>Traffic sources</h3><div class="sub">Last 30 days</div></div></div>
+            <div class="src">
+              <div class="src-item"><div class="top"><span class="nm"><span class="dot" style="background:var(--accent)"></span>Direct</span><span class="vl">38% · 6,720</span></div><div class="track"><i style="width:38%;background:var(--accent)"></i></div></div>
+              <div class="src-item"><div class="top"><span class="nm"><span class="dot" style="background:var(--blue)"></span>Google</span><span class="vl">29% · 5,130</span></div><div class="track"><i style="width:29%;background:var(--blue)"></i></div></div>
+              <div class="src-item"><div class="top"><span class="nm"><span class="dot" style="background:var(--violet)"></span>Reddit</span><span class="vl">17% · 3,008</span></div><div class="track"><i style="width:17%;background:var(--violet)"></i></div></div>
+              <div class="src-item"><div class="top"><span class="nm"><span class="dot" style="background:var(--violet)"></span>Discord</span><span class="vl">11% · 1,945</span></div><div class="track"><i style="width:11%;background:var(--violet)"></i></div></div>
+              <div class="src-item"><div class="top"><span class="nm"><span class="dot" style="background:var(--faint)"></span>Other</span><span class="vl">5% · 884</span></div><div class="track"><i style="width:5%;background:var(--faint)"></i></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row2">
+          <div class="card">
+            <div class="card-head"><div><h3>Snapshot coverage</h3><div class="sub">Daily captures over the last 12 weeks</div></div>
+              <span class="mono" style="font-size:12px;color:var(--accent)">99.2% complete</span>
+            </div>
+            <div class="cov">
+              <div class="cov-grid" id="covGrid" aria-hidden="true"></div>
+              <div class="cov-foot">
+                <span>2 missed days auto-backfilled from CSV</span>
+                <span class="cov-legend"><i style="background:var(--ghost-wash);border:1px solid var(--line)"></i> none <i style="background:var(--accent);opacity:.3"></i><i style="background:var(--accent);opacity:.55"></i><i style="background:var(--accent)"></i> full</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="ask">
+            <div class="qbar">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 3h5l1 4 3.5 1.5-1 3.5 2 3-3 2.5-1.5 3.5-3.5-1-3 1.5-2.5-3-3.5-1 1-3.5-1.5-3L6 7z"/></svg>
+              <input id="askInputMini" placeholder="Ask about your history…" aria-label="Ask about your history">
+              <button class="go" id="askGoMini">↵</button>
+            </div>
+            <div class="conv" id="askConvMini">
+              <div class="msg user"><div class="av you">You</div><div class="txt">How has my site done since launch?</div></div>
+              <div class="msg"><div class="av ai">A</div><div class="txt">Since January 2025 you've kept <b>312,840 visitors</b> across 604 daily snapshots. Traffic is up <b>41% year over year</b>, with your strongest month in <b>June 2026</b> (16,800) — a 32% jump over May, driven mostly by <b>/blog/shipping-fast</b> from Reddit.</div></div>
+            </div>
+            <div class="chips" id="askChipsMini">
+              <button>Best month ever?</button>
+              <button>Reddit vs Google over time</button>
+              <button>This June vs last June</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TRENDS -->
+      <section class="view" data-view="trends" hidden>
+        <p class="view-intro">Your full kept history, at a glance. Use the range control above to zoom, and toggle the prior-year overlay to compare like-for-like.</p>
+        <div class="card">
+          <div class="card-head">
+            <div><h3>Visitors over time</h3><div class="sub" id="trSub">All 20 months kept</div></div>
+            <button class="toggle-yoy" id="yoyToggle2" aria-pressed="false"><span class="switch"></span> Compare to last year</button>
+          </div>
+          <svg id="trendChart" viewBox="0 0 960 320" width="100%" role="img" aria-label="Monthly visitors trend."></svg>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h3>This month vs. same month last year</h3><div class="sub">Year-over-year change by month</div></div></div>
+          <table id="yoyTable"><thead><tr><th>Month</th><th class="num">This year</th><th class="num">Last year</th><th class="num">Change</th></tr></thead><tbody></tbody></table>
+        </div>
+      </section>
+
+      <!-- HISTORY TABLE -->
+      <section class="view" data-view="history" hidden>
+        <p class="view-intro">Every month you've preserved, in one place. Click a column header to sort — then export the whole thing.</p>
+        <div class="card">
+          <div class="card-head">
+            <div><h3>Monthly history</h3><div class="sub" id="histSub">20 months · Jan 2025 – Aug 2026</div></div>
+            <button class="btn sm" id="histExport"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 11l4 4 4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg> Export CSV</button>
+          </div>
+          <div style="overflow-x:auto">
+            <table id="histTable">
+              <thead><tr>
+                <th class="sortable" data-key="i">Month <span class="arw">↕</span></th>
+                <th class="sortable num" data-key="v">Visitors <span class="arw">↕</span></th>
+                <th class="sortable num" data-key="pv">Page views <span class="arw">↕</span></th>
+                <th class="sortable num" data-key="b">Bounce <span class="arw">↕</span></th>
+                <th data-key="tp">Top page</th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SNAPSHOTS -->
+      <section class="view" data-view="snapshots" hidden>
+        <p class="view-intro">Analytix saves a dated snapshot of your numbers every day, so your history survives even when your provider forgets it.</p>
+        <div class="card">
+          <div class="card-head"><div><h3>Daily snapshot coverage</h3><div class="sub">Last 24 weeks · leahbuilds.dev</div></div>
+            <span class="mono" style="font-size:12px;color:var(--accent)">604 snapshots kept</span>
+          </div>
+          <div class="cov">
+            <div class="cov-grid" id="covGridBig" aria-hidden="true"></div>
+            <div class="cov-foot">
+              <span>Next capture in ~6 hours · 2 gaps auto-backfilled</span>
+              <span class="cov-legend"><i style="background:var(--ghost-wash);border:1px solid var(--line)"></i> none <i style="background:var(--accent);opacity:.3"></i><i style="background:var(--accent);opacity:.55"></i><i style="background:var(--accent)"></i> full</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h3>Recent snapshots</h3><div class="sub">Most recent captures</div></div>
+            <button class="btn sm" id="snapNow">Capture now</button>
+          </div>
+          <table><thead><tr><th>Captured</th><th>Source</th><th class="num">Visitors</th><th>Status</th></tr></thead>
+            <tbody id="snapLog"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- IMPORT -->
+      <section class="view" data-view="import" hidden>
+        <p class="view-intro">Three ways to get history in. Connect a source once and it fetches daily; or bring a file or a screenshot for a one-time backfill.</p>
+        <div class="imp-grid">
+          <div class="imp">
+            <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12h6M12 9v6"/><rect x="3" y="4" width="18" height="16" rx="3"/></svg></div>
+            <h3>Connect a source</h3>
+            <p>Link Vercel, GA, Cloudflare or Plausible. Analytix fetches a daily snapshot automatically.</p>
+            <button class="btn primary" id="impConnect">Connect a source</button>
+          </div>
+          <div class="imp">
+            <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4"/></svg></div>
+            <h3>Upload CSV / JSON</h3>
+            <p>Already export to a sheet? Drop the file and Analytix maps the columns for you.</p>
+            <div class="dropzone" id="dzCsv">Click or drop a .csv / .json file</div>
+            <input type="file" id="fileCsv" accept=".csv,.json,.tsv,text/csv,application/json" hidden>
+          </div>
+          <div class="imp">
+            <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M21 16l-5-5-4 4-2-2-4 4"/></svg></div>
+            <h3>Screenshot import</h3>
+            <p>No export? Drop a screenshot of any dashboard and AI reads the numbers into rows.</p>
+            <div class="dropzone" id="dzShot">Click or drop a screenshot</div>
+            <input type="file" id="fileShot" accept="image/*" hidden>
+          </div>
+        </div>
+        <div class="card" id="impResult" hidden>
+          <div class="card-head"><div><h3 id="impResultTitle">Preview</h3><div class="sub" id="impResultSub"></div></div></div>
+          <div id="impResultBody"></div>
+          <div class="modal-actions" style="margin-top:14px">
+            <button class="btn ghost" id="impCancel">Discard</button>
+            <button class="btn primary" id="impSave">Confirm &amp; save</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- SOURCES -->
+      <section class="view" data-view="sources" hidden>
+        <p class="view-intro">The sources feeding this site's history. Connect more any time — each one keeps its own daily snapshot.</p>
+        <div class="card">
+          <div class="card-head"><div><h3>Connected sources</h3><div class="sub" id="srcSub">3 connected</div></div>
+            <button class="btn primary sm" id="srcAdd">+ Add source</button>
+          </div>
+          <div class="conn-list" id="connList"></div>
+        </div>
+      </section>
+
+      <!-- ASK AI -->
+      <section class="view" data-view="ask" hidden>
+        <p class="view-intro">Ask anything about your kept history in plain English. Answers are computed from your snapshots.</p>
+        <div class="ask">
+          <div class="qbar">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 3h5l1 4 3.5 1.5-1 3.5 2 3-3 2.5-1.5 3.5-3.5-1-3 1.5-2.5-3-3.5-1 1-3.5-1.5-3L6 7z"/></svg>
+            <input id="askInput" placeholder="e.g. Which month grew the most?" aria-label="Ask about your history">
+            <button class="go" id="askGo">↵</button>
+          </div>
+          <div class="conv" id="askConv">
+            <div class="msg"><div class="av ai">A</div><div class="txt">Ask me about your traffic, growth, best months, or sources — I read your full kept history to answer.</div></div>
+          </div>
+          <div class="chips" id="askChips">
+            <button>Best month ever?</button>
+            <button>How much have I grown this year?</button>
+            <button>Reddit vs Google over time</button>
+            <button>This June vs last June</button>
+            <button>Total visitors kept</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- REPORTS -->
+      <section class="view" data-view="reports" hidden>
+        <p class="view-intro">Saved and scheduled reports. Generate a fresh one from your current history, or export the raw data.</p>
+        <div class="card">
+          <div class="card-head"><div><h3>Reports</h3><div class="sub" id="repSub">3 saved</div></div>
+            <div style="display:flex;gap:8px">
+              <button class="btn sm" id="repExport">Export CSV</button>
+              <button class="btn primary sm" id="repGen">Generate report</button>
+            </div>
+          </div>
+          <div class="rep-list" id="repList"></div>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="view" data-view="settings" hidden>
+        <p class="view-intro">Preferences for this workspace. Changes here are local to this demo.</p>
+        <div class="card">
+          <div class="set-list">
+            <div class="set-row">
+              <div class="l"><div class="t">Site name</div><div class="d">Shown across the dashboard</div></div>
+              <input type="text" id="setName" value="leahbuilds.dev">
+            </div>
+            <div class="set-row">
+              <div class="l"><div class="t">Time zone</div><div class="d">Used to align daily snapshots</div></div>
+              <select id="setTz"><option>America/Los_Angeles</option><option>America/New_York</option><option>UTC</option><option>Europe/London</option></select>
+            </div>
+            <div class="set-row">
+              <div class="l"><div class="t">Theme</div><div class="d">Light, dark, or follow your system</div></div>
+              <select id="setTheme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select>
+            </div>
+            <div class="set-row">
+              <div class="l"><div class="t">Daily auto-snapshot</div><div class="d">Fetch and store a snapshot every day</div></div>
+              <button class="tgl" id="setSnap" aria-pressed="true"><span class="switch"></span></button>
+            </div>
+            <div class="set-row">
+              <div class="l"><div class="t">Monthly email report</div><div class="d">Sent to you on the 1st</div></div>
+              <button class="tgl" id="setEmail" aria-pressed="false"><span class="switch"></span></button>
+            </div>
+          </div>
+          <div class="modal-actions" style="margin-top:18px">
+            <button class="btn primary" id="setSave">Save changes</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="foot-note">Analytix · dashboard design draft — figures shown are sample data for layout, not real analytics.</div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" hidden><div class="modal" id="modal" role="dialog" aria-modal="true"></div></div>
+<div id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var SVGNS="http://www.w3.org/2000/svg";
+  var $=function(s,r){return (r||document).querySelector(s);};
+  var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s));};
+  function el(n,a){var e=document.createElementNS(SVGNS,n);for(var k in a)e.setAttribute(k,a[k]);return e;}
+  function fmt(n){return n.toLocaleString("en-US");}
+
+  /* ---------- data ---------- */
+  var MONTHS=["Jan '25","Feb '25","Mar '25","Apr '25","May '25","Jun '25","Jul '25","Aug '25","Sep '25","Oct '25","Nov '25","Dec '25","Jan '26","Feb '26","Mar '26","Apr '26","May '26","Jun '26","Jul '26","Aug '26"];
+  var CUR=[2200,2450,2700,3050,3400,3900,4200,4050,4600,5200,5600,5300,6100,7300,8900,10400,12700,16800,15200,17900];
+  var PREV=[1400,1550,1700,1850,2000,2300,2500,2400,2750,3100,3400,3200,2200,2450,2700,3050,3400,3900,4200,4050];
+  var TOPPAGES=["/","/projects","/blog/shipping-fast","/about","/pricing"];
+  var ROWS=CUR.map(function(v,i){
+    return {i:i,month:MONTHS[i],v:v,pv:Math.round(v*1.63),b:+(52-i*0.55+(i%3-1)*0.7).toFixed(1),tp:TOPPAGES[i%TOPPAGES.length]};
+  });
+  var TOTAL=CUR.reduce(function(a,b){return a+b;},0);
+
+  /* ---------- toast ---------- */
+  var toastWrap=$("#toast");
+  function toast(msg){
+    var t=document.createElement("div");t.className="toast";
+    t.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span></span>';
+    t.querySelector("span").textContent=msg;
+    toastWrap.appendChild(t);
+    setTimeout(function(){t.style.transition="opacity .3s";t.style.opacity="0";setTimeout(function(){t.remove();},320);},2600);
+  }
+
+  /* ---------- modal ---------- */
+  var overlay=$("#overlay"), modal=$("#modal");
+  function openModal(html){modal.innerHTML=html;overlay.hidden=false;var f=modal.querySelector("[data-autofocus]");if(f)f.focus();}
+  function closeModal(){overlay.hidden=true;modal.innerHTML="";}
+  overlay.addEventListener("click",function(e){if(e.target===overlay)closeModal();});
+  document.addEventListener("keydown",function(e){if(e.key==="Escape"){closeModal();closeMenu();}});
+  document.addEventListener("click",function(e){if(e.target.id==="modalClose"||e.target.closest("#modalClose"))closeModal();});
+
+  function copyText(text){
+    function ok(){toast("Copied to clipboard");}
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(ok).catch(sel);
+    }else sel();
+    function sel(){var ta=modal.querySelector("textarea");if(ta){ta.focus();ta.select();try{document.execCommand("copy");ok();}catch(e){toast("Press Ctrl/Cmd + C to copy");}}else toast("Copy unavailable");}
+  }
+
+  /* ---------- theme ---------- */
+  function applyTheme(mode){
+    var r=document.documentElement;
+    if(mode==="system")r.removeAttribute("data-theme");
+    else r.setAttribute("data-theme",mode);
+  }
+  function currentDark(){
+    var c=document.documentElement.getAttribute("data-theme");
+    if(c)return c==="dark";
+    return window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;
+  }
+  $("#themeToggle").addEventListener("click",function(){
+    var dark=currentDark();applyTheme(dark?"light":"dark");
+    var sel=$("#setTheme");if(sel)sel.value=dark?"light":"dark";
+    redrawCharts();
+  });
+
+  /* ---------- charts ---------- */
+  var curRange=20, showYoy=false;
+  function drawLine(svg,range,vb){
+    if(!svg)return;
+    while(svg.firstChild)svg.removeChild(svg.firstChild);
+    var W=vb[0],H=vb[1];
+    var padL=44,padR=16,padT=18,padB=34,iw=W-padL-padR,ih=H-padT-padB,max=20000;
+    var start=CUR.length-range, cur=CUR.slice(start), prev=PREV.slice(start), labels=MONTHS.slice(start);
+    function x(i){return padL+(cur.length<=1?iw/2:i/(cur.length-1)*iw);}
+    function y(v){return padT+(1-v/max)*ih;}
+    [0,5000,10000,15000,20000].forEach(function(t){
+      var gy=y(t);
+      svg.appendChild(el("line",{x1:padL,y1:gy,x2:W-padR,y2:gy,stroke:"var(--line)","stroke-width":1}));
+      var lb=el("text",{x:padL-9,y:gy+4,"text-anchor":"end","font-family":"IBM Plex Mono","font-size":11,fill:"var(--faint)"});
+      lb.textContent=t===0?"0":(t/1000)+"k";svg.appendChild(lb);
+    });
+    labels.forEach(function(m,i){
+      var every=range>12?3:(range>6?2:1);
+      if(i%every!==0 && i!==cur.length-1)return;
+      var t=el("text",{x:x(i),y:H-12,"text-anchor":"middle","font-family":"IBM Plex Mono","font-size":10,fill:"var(--faint)"});
+      t.textContent=m.replace(" '"," '");svg.appendChild(t);
+    });
+    function path(arr){var d="";for(var i=0;i<arr.length;i++)d+=(i?"L":"M")+x(i).toFixed(1)+" "+y(arr[i]).toFixed(1)+" ";return d.trim();}
+    if(showYoy){svg.appendChild(el("path",{d:path(prev),fill:"none",stroke:"var(--ghost)","stroke-width":2,"stroke-dasharray":"3 4","stroke-linecap":"round","stroke-linejoin":"round"}));}
+    var gid="g_"+svg.id;
+    var grad=el("linearGradient",{id:gid,x1:0,y1:0,x2:0,y2:1});
+    grad.appendChild(el("stop",{offset:"0%","stop-color":"var(--accent)","stop-opacity":.22}));
+    grad.appendChild(el("stop",{offset:"100%","stop-color":"var(--accent)","stop-opacity":0}));
+    var defs=el("defs",{});defs.appendChild(grad);svg.appendChild(defs);
+    svg.appendChild(el("path",{d:path(cur)+" L"+x(cur.length-1)+" "+(padT+ih)+" L"+x(0)+" "+(padT+ih)+" Z",fill:"url(#"+gid+")"}));
+    if(range>1){
+      var ex=x(cur.length-1)-(x(cur.length-1)-x(cur.length-2))*0.5;
+      svg.appendChild(el("line",{x1:ex,y1:padT-4,x2:ex,y2:padT+ih,stroke:"var(--accent-deep)","stroke-width":1.2,"stroke-dasharray":"4 4",opacity:.6}));
+      var ml=el("text",{x:ex-6,y:padT+8,"text-anchor":"end","font-family":"IBM Plex Mono","font-size":9.5,fill:"var(--accent-deep)"});
+      ml.textContent="provider's edge";svg.appendChild(ml);
+    }
+    var cp=el("path",{d:path(cur),fill:"none",stroke:"var(--accent)","stroke-width":3,"stroke-linecap":"round","stroke-linejoin":"round"});
+    svg.appendChild(cp);
+    var li=cur.length-1;
+    svg.appendChild(el("circle",{cx:x(li),cy:y(cur[li]),r:5,fill:"var(--surface)",stroke:"var(--accent)","stroke-width":2.4}));
+    if(!reduce){try{var L=cp.getTotalLength();cp.style.strokeDasharray=L;cp.style.strokeDashoffset=L;cp.getBoundingClientRect();cp.style.transition="stroke-dashoffset 800ms ease";requestAnimationFrame(function(){cp.style.strokeDashoffset="0";});}catch(e){}}
+  }
+  function updateOverviewInfo(range){
+    var start=CUR.length-range, windowSum=CUR.slice(start).reduce(function(a,b){return a+b;},0);
+    var maxV=Math.max.apply(null,CUR.slice(start)), maxI=CUR.indexOf(maxV);
+    $("#ovTotal").textContent=fmt(windowSum);
+    var labelMap={1:"last 30 days",6:"last 6 months",12:"last 12 months",20:"all time"};
+    $("#ovCmp").innerHTML="visitors kept, "+labelMap[range]+" · <b class=\"up\">▲ 41%</b> year over year";
+    $("#ovBest").innerHTML="best month <b>"+MONTHS[maxI]+"</b> · "+fmt(maxV);
+    $("#ovSub").textContent=(range===1?"Last 30 days":"Monthly totals ("+labelMap[range]+")")+" · your provider only kept the last 30 days";
+    $("#trSub").textContent=(range===20?"All 20 months kept":labelMap[range].replace("last ","")+" shown");
+  }
+  function redrawCharts(){
+    drawLine($("#mainChart"),curRange,[960,300]);
+    if(!$('.view[data-view=\"trends\"]').hidden)drawLine($("#trendChart"),curRange,[960,320]);
+    updateOverviewInfo(curRange);
+  }
+
+  /* range buttons */
+  var rangeBtns=$$("#rangeGroup button");
+  rangeBtns.forEach(function(b){b.addEventListener("click",function(){
+    rangeBtns.forEach(function(o){o.setAttribute("aria-pressed","false");});
+    b.setAttribute("aria-pressed","true");
+    curRange=parseInt(b.getAttribute("data-range"),10);
+    redrawCharts();
+  });});
+
+  /* yoy toggles (two, kept in sync) */
+  function setYoy(v){showYoy=v;$$(".toggle-yoy").forEach(function(t){t.setAttribute("aria-pressed",v?"true":"false");});var lg=$("#lgYoy");if(lg)lg.hidden=!v;redrawCharts();}
+  $("#yoyToggle").addEventListener("click",function(){setYoy(!showYoy);});
+  $("#yoyToggle2").addEventListener("click",function(){setYoy(!showYoy);});
+
+  /* ---------- KPI tiles ---------- */
+  var KPIS=[
+    {lbl:"Visitors",val:"17,904",delta:"8.2%",up:true,foot:"vs. 16,540 prev 30d",spark:[9,11,10,13,12,15,14,17,16,19,18,22]},
+    {lbl:"Page views",val:"31,208",delta:"11.4%",up:true,foot:"1.74 per visit",spark:[12,13,12,15,16,15,18,17,20,19,23,24]},
+    {lbl:"Bounce rate",val:"42.1%",delta:"3.0%",up:true,foot:"lower is better",spark:[52,50,51,48,49,47,46,45,44,43,43,42]},
+    {lbl:"Avg. session",val:"2m 38s",delta:"1.1%",up:false,foot:"vs. 2m 40s prev 30d",spark:[30,29,31,28,30,27,29,26,28,27,26,26]}
+  ];
+  var kwrap=$("#kpis");
+  KPIS.forEach(function(k){
+    var d=document.createElement("div");d.className="kpi";
+    d.innerHTML='<div class="k-top"><span class="k-lbl">'+k.lbl+'</span><span class="k-delta '+(k.up?"up":"down")+'">'+(k.up?"▲":"▼")+" "+k.delta+'</span></div><div class="k-val tnum">'+k.val+'</div><svg class="k-spark" viewBox="0 0 120 34" preserveAspectRatio="none" aria-hidden="true"></svg><div class="k-foot">'+k.foot+'</div>';
+    kwrap.appendChild(d);
+    var s=d.querySelector(".k-spark"),arr=k.spark,mx=Math.max.apply(null,arr),mn=Math.min.apply(null,arr);
+    function sx(i){return i/(arr.length-1)*120;}function sy(v){return 32-(v-mn)/(mx-mn||1)*28-2;}
+    var dd="";for(var i=0;i<arr.length;i++)dd+=(i?"L":"M")+sx(i).toFixed(1)+" "+sy(arr[i]).toFixed(1)+" ";
+    s.appendChild(el("path",{d:dd+"L120 34 L0 34 Z",fill:"var(--accent)","fill-opacity":.12}));
+    s.appendChild(el("path",{d:dd.trim(),fill:"none",stroke:"var(--accent)","stroke-width":2,"stroke-linecap":"round","stroke-linejoin":"round","vector-effect":"non-scaling-stroke"}));
+    s.appendChild(el("circle",{cx:sx(arr.length-1),cy:sy(arr[arr.length-1]),r:2.6,fill:"var(--accent)"}));
+  });
+
+  /* ---------- coverage grids ---------- */
+  function fillCov(node,count,misses){
+    if(!node)return;node.innerHTML="";
+    for(var i=0;i<count;i++){
+      var c=document.createElement("div");c.className="cell";
+      if(misses.indexOf(i)>=0)c.className="cell miss";
+      else{var r=Math.random();if(r<0.08)c.className="cell l1";else if(r<0.2)c.className="cell l2";}
+      node.appendChild(c);
+    }
+  }
+  fillCov($("#covGrid"),84,[23,58]);
+  fillCov($("#covGridBig"),168,[47,112,150]);
+
+  /* ---------- YoY table (trends) ---------- */
+  (function(){
+    var tb=$("#yoyTable tbody");if(!tb)return;
+    for(var i=12;i<20;i++){
+      var chg=Math.round((CUR[i]-PREV[i])/PREV[i]*100);
+      var tr=document.createElement("tr");
+      tr.innerHTML='<td>'+MONTHS[i]+'</td><td class="num">'+fmt(CUR[i])+'</td><td class="num">'+fmt(PREV[i])+'</td><td class="num trend '+(chg>=0?"up":"down")+'">'+(chg>=0?"▲ ":"▼ ")+Math.abs(chg)+'%</td>';
+      tb.appendChild(tr);
+    }
+  })();
+
+  /* ---------- history table (sortable) ---------- */
+  var histSort={key:"i",dir:1};
+  function renderHist(){
+    var tb=$("#histTable tbody");if(!tb)return;
+    var rows=ROWS.slice().sort(function(a,b){
+      var x=a[histSort.key],y=b[histSort.key];
+      if(typeof x==="string")return histSort.dir*x.localeCompare(y);
+      return histSort.dir*(x-y);
+    });
+    tb.innerHTML="";
+    rows.forEach(function(r){
+      var tr=document.createElement("tr");
+      tr.innerHTML='<td>'+r.month+'</td><td class="num">'+fmt(r.v)+'</td><td class="num">'+fmt(r.pv)+'</td><td class="num">'+r.b.toFixed(1)+'%</td><td class="path">'+r.tp+'</td>';
+      tb.appendChild(tr);
+    });
+  }
+  $$("#histTable th.sortable").forEach(function(th){
+    th.addEventListener("click",function(){
+      var k=th.getAttribute("data-key");
+      if(histSort.key===k)histSort.dir*=-1;else{histSort.key=k;histSort.dir=1;}
+      $$("#histTable th .arw").forEach(function(a){a.textContent="↕";});
+      var arw=th.querySelector(".arw");if(arw)arw.textContent=histSort.dir>0?"↑":"↓";
+      renderHist();
+    });
+  });
+  renderHist();
+
+  /* ---------- snapshot log ---------- */
+  (function(){
+    var tb=$("#snapLog");if(!tb)return;
+    var days=["Sep 8, 06:00","Sep 7, 06:00","Sep 6, 06:00","Sep 5, 06:00","Sep 4, 06:00","Sep 3, 06:00"];
+    var srcs=["Vercel","Vercel","Google Analytics","Vercel","Cloudflare","Vercel"];
+    var vis=[612,589,604,571,558,542];
+    days.forEach(function(d,i){
+      var tr=document.createElement("tr");
+      tr.innerHTML='<td class="mono" style="font-size:12px">'+d+'</td><td>'+srcs[i]+'</td><td class="num">'+vis[i]+'</td><td><span class="trend up">✓ stored</span></td>';
+      tb.appendChild(tr);
+    });
+  })();
+  var snapNow=$("#snapNow");if(snapNow)snapNow.addEventListener("click",function(){
+    var tb=$("#snapLog");var tr=document.createElement("tr");
+    tr.innerHTML='<td class="mono" style="font-size:12px">just now</td><td>Vercel</td><td class="num">'+ (620+Math.floor(Math.random()*20)) +'</td><td><span class="trend up">✓ stored</span></td>';
+    tb.insertBefore(tr,tb.firstChild);toast("Snapshot captured");
+  });
+
+  /* ---------- connected sources ---------- */
+  var SOURCES=[
+    {n:"Vercel Analytics",s:"leahbuilds.dev · fetched 6h ago",c:"#111317",on:true},
+    {n:"Google Analytics",s:"UA + GA4 · fetched 6h ago",c:"#F6821F",on:true},
+    {n:"Cloudflare",s:"zone leahbuilds.dev · fetched 1d ago",c:"#F38020",on:true}
+  ];
+  var ALLSOURCES=[
+    {n:"Vercel",c:"#111317"},{n:"Google Analytics",c:"#F6821F"},{n:"Cloudflare",c:"#F38020"},
+    {n:"Plausible",c:"#5850EC"},{n:"Umami",c:"#2B9348"},{n:"Stripe",c:"#635BFF"},
+    {n:"GitHub",c:"#6E7681"},{n:"Shopify",c:"#95BF47"}
+  ];
+  function renderConn(){
+    var list=$("#connList");if(!list)return;list.innerHTML="";
+    SOURCES.forEach(function(s,idx){
+      var d=document.createElement("div");d.className="conn";
+      d.innerHTML='<span class="cd" style="background:'+s.c+'"></span><div class="info"><div class="n">'+s.n+'</div><div class="s">'+s.s+'</div></div><span class="status '+(s.on?"on":"off")+'">'+(s.on?"● live":"paused")+'</span><button class="btn sm ghost" data-idx="'+idx+'">'+(s.on?"Pause":"Resume")+'</button>';
+      list.appendChild(d);
+    });
+    $("#srcSub").textContent=SOURCES.length+" connected";
+    $("#siteSub").textContent=SOURCES.length+" sources · kept since Jan '25";
+    $$("#connList .btn").forEach(function(b){b.addEventListener("click",function(){
+      var i=+b.getAttribute("data-idx");SOURCES[i].on=!SOURCES[i].on;renderConn();toast(SOURCES[i].n+(SOURCES[i].on?" resumed":" paused"));
+    });});
+  }
+  renderConn();
+
+  /* ---------- add source modal ---------- */
+  function openAddSource(){
+    var opts=ALLSOURCES.map(function(s){
+      var already=SOURCES.some(function(x){return x.n.indexOf(s.n)===0;});
+      return '<button class="source-opt" data-n="'+s.n+'" data-c="'+s.c+'"'+(already?" disabled":"")+'><span class="cd" style="background:'+s.c+'"></span><span><span class="n">'+s.n+'</span><br><span class="s">'+(already?"connected":"connect")+'</span></span></button>';
+    }).join("");
+    openModal('<div class="mhead"><div><h3>Add a source</h3><div class="mdesc">Pick a platform to connect. Analytix will fetch a daily snapshot automatically.</div></div><button class="x" id="modalClose" aria-label="Close">×</button></div><div class="source-grid">'+opts+'</div>');
+    $$("#modal .source-opt").forEach(function(b){
+      if(b.disabled)return;
+      b.addEventListener("click",function(){
+        var n=b.getAttribute("data-n"),c=b.getAttribute("data-c");
+        b.innerHTML='<span class="cd" style="background:'+c+'"></span><span><span class="n">'+n+'</span><br><span class="s">connecting…</span></span>';
+        setTimeout(function(){
+          SOURCES.push({n:n+(n==="Google Analytics"?"":" Analytics").replace(" Analytics Analytics"," Analytics"),s:"just now · first snapshot queued",c:c,on:true});
+          renderConn();closeModal();toast(n+" connected");
+        },700);
+      });
+    });
+  }
+  $("#addSourceBtn").addEventListener("click",openAddSource);
+  $("#srcAdd").addEventListener("click",openAddSource);
+  $("#impConnect").addEventListener("click",openAddSource);
+  $("#menuAddSite").addEventListener("click",function(){closeMenu();openAddSource();});
+
+  /* ---------- export modal ---------- */
+  function csv(){
+    var out="month,visitors,page_views,bounce_rate,top_page\n";
+    ROWS.forEach(function(r){out+=r.month.replace(" '","-")+","+r.v+","+r.pv+","+r.b.toFixed(1)+","+r.tp+"\n";});
+    return out;
+  }
+  function openExport(){
+    openModal('<div class="mhead"><div><h3>Export history</h3><div class="mdesc">'+ROWS.length+' months · CSV. Copy it below (downloads are disabled in this preview).</div></div><button class="x" id="modalClose" aria-label="Close">×</button></div><textarea readonly data-autofocus>'+csv()+'</textarea><div class="modal-actions"><button class="btn" id="modalClose">Close</button><button class="btn primary" id="copyCsv">Copy CSV</button></div>');
+    $("#copyCsv").addEventListener("click",function(){copyText(csv());});
+  }
+  $("#exportBtn").addEventListener("click",openExport);
+  $("#histExport").addEventListener("click",openExport);
+  $("#repExport").addEventListener("click",openExport);
+
+  /* ---------- site switcher ---------- */
+  var siteMenu=$("#siteMenu"), siteBtn=$("#siteBtn");
+  function closeMenu(){siteMenu.hidden=true;siteBtn.setAttribute("aria-expanded","false");}
+  siteBtn.addEventListener("click",function(e){e.stopPropagation();var open=!siteMenu.hidden;siteMenu.hidden=open;siteBtn.setAttribute("aria-expanded",open?"false":"true");});
+  document.addEventListener("click",function(e){if(!e.target.closest(".site-wrap"))closeMenu();});
+  $$("#siteMenu button[data-site]").forEach(function(b){
+    b.addEventListener("click",function(){
+      var name=b.getAttribute("data-site"),sub=b.getAttribute("data-sub");
+      $("#siteName").textContent=name;$("#siteSub").textContent=sub;
+      var sn=$("#setName");if(sn)sn.value=name;
+      closeMenu();toast("Switched to "+name);
+    });
+  });
+
+  /* ---------- ask AI ---------- */
+  function answer(q){
+    q=q.toLowerCase();
+    if(q.indexOf("best month")>=0||q.indexOf("ever")>=0) return "Your best month on record is <b>June 2026</b> with <b>16,800 visitors</b> — a 32% jump over May and your largest single-month gain since launch.";
+    if(q.indexOf("grow")>=0||q.indexOf("this year")>=0) return "You're up <b>41% year over year</b>. The first eight months of 2026 already total <b>"+fmt(CUR.slice(12).reduce(function(a,b){return a+b;},0))+"</b> visitors vs. "+fmt(PREV.slice(12).reduce(function(a,b){return a+b;},0))+" in the same span of 2025.";
+    if(q.indexOf("reddit")>=0&&q.indexOf("google")>=0) return "Over the last 30 days <b>Google (5,130)</b> still edges out <b>Reddit (3,008)</b>, but Reddit is your fastest-growing source — up 64% on the back of <b>/blog/shipping-fast</b>.";
+    if(q.indexOf("june")>=0) return "<b>June 2026: 16,800</b> vs. <b>June 2025: 3,900</b> — a <b>+331%</b> year-over-year jump, your strongest like-for-like month.";
+    if(q.indexOf("total")>=0||q.indexOf("since launch")>=0||q.indexOf("all")>=0) return "Since January 2025 you've kept <b>"+fmt(TOTAL)+" visitors</b> across 604 daily snapshots — none of which your provider still stores.";
+    if(q.indexOf("source")>=0) return "This month: <b>Direct 38%</b>, Google 29%, Reddit 17%, Discord 11%, other 5%. Reddit and Discord together now drive more than a quarter of your traffic.";
+    return "From your kept history: <b>"+fmt(TOTAL)+"</b> total visitors since Jan 2025, up <b>41%</b> YoY, best month <b>June 2026</b> (16,800). Ask about growth, sources, or a specific month for more.";
+  }
+  function ask(convSel,inputSel,q){
+    var conv=$(convSel);if(!conv||!q.trim())return;
+    var u=document.createElement("div");u.className="msg user";u.innerHTML='<div class="av you">You</div><div class="txt"></div>';
+    u.querySelector(".txt").textContent=q;conv.appendChild(u);
+    var a=document.createElement("div");a.className="msg";a.innerHTML='<div class="av ai">A</div><div class="txt">…</div>';conv.appendChild(a);
+    setTimeout(function(){a.querySelector(".txt").innerHTML=answer(q);},260);
+    var inp=$(inputSel);if(inp)inp.value="";
+  }
+  $("#askGo").addEventListener("click",function(){ask("#askConv","#askInput",$("#askInput").value);});
+  $("#askInput").addEventListener("keydown",function(e){if(e.key==="Enter")ask("#askConv","#askInput",$("#askInput").value);});
+  $$("#askChips button").forEach(function(b){b.addEventListener("click",function(){ask("#askConv","#askInput",b.textContent);});});
+  $("#askGoMini").addEventListener("click",function(){ask("#askConvMini","#askInputMini",$("#askInputMini").value);});
+  $("#askInputMini").addEventListener("keydown",function(e){if(e.key==="Enter")ask("#askConvMini","#askInputMini",$("#askInputMini").value);});
+  $$("#askChipsMini button").forEach(function(b){b.addEventListener("click",function(){ask("#askConvMini","#askInputMini",b.textContent);});});
+
+  /* ---------- import ---------- */
+  function showImport(kind,fname){
+    var box=$("#impResult");box.hidden=false;
+    if(kind==="csv"){
+      $("#impResultTitle").textContent="Mapped from "+fname;
+      $("#impResultSub").textContent="Detected 4 columns · 218 rows · date range Jan 2025 – Aug 2026";
+      $("#impResultBody").innerHTML='<div style="overflow-x:auto"><table><thead><tr><th>date</th><th class="num">visitors</th><th class="num">page_views</th><th>top_page</th></tr></thead><tbody>'+
+        ROWS.slice(-4).map(function(r){return '<tr><td class="mono" style="font-size:12px">'+r.month+'</td><td class="num">'+fmt(r.v)+'</td><td class="num">'+fmt(r.pv)+'</td><td class="path">'+r.tp+'</td></tr>';}).join("")+
+        '<tr><td class="mono" style="font-size:12px;color:var(--faint)">…</td><td class="num" style="color:var(--faint)">…</td><td class="num" style="color:var(--faint)">…</td><td style="color:var(--faint)">…</td></tr></tbody></table></div>';
+    }else{
+      $("#impResultTitle").textContent="AI read "+fname;
+      $("#impResultSub").innerHTML='Found <b>7 metrics</b> across 30 days';
+      $("#impResultBody").innerHTML='<div style="overflow-x:auto"><table><thead><tr><th>date</th><th class="num">visitors</th><th class="num">views</th><th>top page</th></tr></thead><tbody>'+
+        '<tr><td class="mono" style="font-size:12px">Aug 26</td><td class="num">612</td><td class="num">1,004</td><td class="path">/projects</td></tr>'+
+        '<tr><td class="mono" style="font-size:12px">Aug 25</td><td class="num">589</td><td class="num">972</td><td class="path">/</td></tr>'+
+        '<tr><td class="mono" style="font-size:12px">Aug 24</td><td class="num">521</td><td class="num">861</td><td class="path">/blog</td></tr>'+
+        '</tbody></table></div>';
+    }
+    box.scrollIntoView({behavior:reduce?"auto":"smooth",block:"nearest"});
+  }
+  function wireDrop(dzSel,inputSel,kind){
+    var dz=$(dzSel),inp=$(inputSel);if(!dz||!inp)return;
+    dz.addEventListener("click",function(){inp.click();});
+    inp.addEventListener("change",function(){if(inp.files&&inp.files[0]){dz.textContent="✓ "+inp.files[0].name;showImport(kind,inp.files[0].name);}});
+    ["dragover","dragenter"].forEach(function(ev){dz.addEventListener(ev,function(e){e.preventDefault();dz.classList.add("drag");});});
+    ["dragleave","drop"].forEach(function(ev){dz.addEventListener(ev,function(e){e.preventDefault();dz.classList.remove("drag");});});
+    dz.addEventListener("drop",function(e){var f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(f){dz.textContent="✓ "+f.name;showImport(kind,f.name);}});
+  }
+  wireDrop("#dzCsv","#fileCsv","csv");
+  wireDrop("#dzShot","#fileShot","shot");
+  $("#impCancel").addEventListener("click",function(){$("#impResult").hidden=true;$("#dzCsv").textContent="Click or drop a .csv / .json file";$("#dzShot").textContent="Click or drop a screenshot";});
+  $("#impSave").addEventListener("click",function(){$("#impResult").hidden=true;toast("History imported & saved");});
+
+  /* ---------- reports ---------- */
+  var REPORTS=[
+    {n:"August 2026 monthly summary",s:"generated Sep 1 · PDF"},
+    {n:"Q2 2026 growth review",s:"generated Jul 2 · PDF"},
+    {n:"Launch-to-date overview",s:"generated Jun 15 · PDF"}
+  ];
+  function renderReports(){
+    var list=$("#repList");if(!list)return;list.innerHTML="";
+    REPORTS.forEach(function(r){
+      var d=document.createElement("div");d.className="rep";
+      d.innerHTML='<div class="ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6"/></svg></div><div class="info"><div class="n">'+r.n+'</div><div class="s">'+r.s+'</div></div><button class="btn sm ghost">Open</button>';
+      list.appendChild(d);
+    });
+    $("#repSub").textContent=REPORTS.length+" saved";
+    $$("#repList .btn").forEach(function(b){b.addEventListener("click",function(){toast("Opening report…");});});
+  }
+  renderReports();
+  $("#repGen").addEventListener("click",function(){
+    REPORTS.unshift({n:"September 2026 summary",s:"generated just now · PDF"});renderReports();toast("Report generated");
+  });
+
+  /* ---------- settings ---------- */
+  $$(".tgl").forEach(function(t){t.addEventListener("click",function(){t.setAttribute("aria-pressed",t.getAttribute("aria-pressed")==="true"?"false":"true");});});
+  $("#setTheme").addEventListener("change",function(){applyTheme(this.value);redrawCharts();});
+  $("#setSave").addEventListener("click",function(){
+    var nm=$("#setName").value.trim();if(nm){$("#siteName").textContent=nm;}
+    toast("Settings saved");
+  });
+
+  /* ---------- router ---------- */
+  var TITLES={overview:"Overview",trends:"Trends",history:"History table",snapshots:"Snapshots",import:"Import data",sources:"Sources",ask:"Ask AI",reports:"Reports",settings:"Settings"};
+  var navLinks=$$("#nav a");
+  function go(view){
+    navLinks.forEach(function(a){a.classList.toggle("active",a.getAttribute("data-view")===view);});
+    $$(".view").forEach(function(v){v.hidden=v.getAttribute("data-view")!==view;});
+    $("#viewTitle").textContent=TITLES[view]||view;
+    $("#rangeGroup").style.display=(view==="overview"||view==="trends")?"":"none";
+    if(view==="trends")drawLine($("#trendChart"),curRange,[960,320]);
+    window.scrollTo({top:0,behavior:reduce?"auto":"smooth"});
+  }
+  navLinks.forEach(function(a){a.addEventListener("click",function(e){e.preventDefault();go(a.getAttribute("data-view"));});});
+
+  /* ---------- init ---------- */
+  redrawCharts();
+})();
+</script>
+</template>
+<script>
+(function(){
+  "use strict";
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ----- theme toggle ----- */
+  var tt = document.getElementById("themeToggle");
+  if(tt){
+    tt.addEventListener("click", function(){
+      var root = document.documentElement;
+      var cur = root.getAttribute("data-theme");
+      var isDark;
+      if(cur){ isDark = cur === "dark"; }
+      else { isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches; }
+      root.setAttribute("data-theme", isDark ? "light" : "dark");
+    });
+  }
+
+  /* ----- hero chart ----- */
+  // 14 months of monthly visitors (believable growth with a June spike)
+  var DATA = [
+    {m:"Jul '25", v:3100}, {m:"Aug", v:3400}, {m:"Sep", v:4050}, {m:"Oct", v:4600},
+    {m:"Nov", v:5200}, {m:"Dec", v:4900}, {m:"Jan '26", v:6100}, {m:"Feb", v:7300},
+    {m:"Mar", v:8900}, {m:"Apr", v:10400}, {m:"May", v:12700}, {m:"Jun", v:16800},
+    {m:"Jul", v:15200}, {m:"Aug", v:17900}
+  ];
+  var svg = document.getElementById("heroChart");
+  var SVGNS = "http://www.w3.org/2000/svg";
+
+  function el(name, attrs){
+    var e = document.createElementNS(SVGNS, name);
+    for(var k in attrs){ e.setAttribute(k, attrs[k]); }
+    return e;
+  }
+
+  function drawChart(range){
+    if(!svg) return;
+    while(svg.firstChild){ svg.removeChild(svg.firstChild); }
+    var data = DATA.slice(DATA.length - range);
+    var W = 720, H = 320;
+    var padL = 46, padR = 20, padT = 22, padB = 40;
+    var iw = W - padL - padR, ih = H - padT - padB;
+    var max = 20000, min = 0;
+    // "kept by provider" cutoff: only the final month (30 days)
+    var keptFromIndex = data.length - 2; // last segment ~ recent 30d, keep a little context
+    if(range <= 3) keptFromIndex = data.length - 2;
+
+    function x(i){ return padL + (data.length===1?0: i/(data.length-1)*iw); }
+    function y(v){ return padT + (1 - (v-min)/(max-min))*ih; }
+
+    // gridlines + y labels
+    var ticks = [0,5000,10000,15000,20000];
+    ticks.forEach(function(t){
+      var gy = y(t);
+      svg.appendChild(el("line",{x1:padL,y1:gy,x2:W-padR,y2:gy,stroke:"var(--line)","stroke-width":1}));
+      var lbl = el("text",{x:padL-10,y:gy+4,"text-anchor":"end","font-family":"IBM Plex Mono","font-size":11,fill:"var(--faint)"});
+      lbl.textContent = t===0 ? "0" : (t/1000)+"k";
+      svg.appendChild(lbl);
+    });
+
+    // x labels (sparse)
+    data.forEach(function(d,i){
+      var show = data.length<=6 ? true : (i===0 || i===data.length-1 || i%3===0);
+      if(!show) return;
+      var t = el("text",{x:x(i),y:H-14,"text-anchor":"middle","font-family":"IBM Plex Mono","font-size":10.5,fill:"var(--faint)"});
+      t.textContent = d.m;
+      svg.appendChild(t);
+    });
+
+    // build path strings
+    function seg(from,to){
+      var d="";
+      for(var i=from;i<=to;i++){
+        d += (i===from?"M":"L") + x(i).toFixed(1) + " " + y(data[i].v).toFixed(1) + " ";
+      }
+      return d.trim();
+    }
+
+    // forgotten portion (dashed, ghost) — everything up to the cutoff
+    if(keptFromIndex > 0){
+      var gPath = el("path",{d:seg(0, keptFromIndex), fill:"none", stroke:"var(--ghost)","stroke-width":2.4,"stroke-dasharray":"2 5","stroke-linecap":"round","stroke-linejoin":"round"});
+      svg.appendChild(gPath);
+      // ghost dots
+      for(var gi=0; gi<=keptFromIndex; gi++){
+        svg.appendChild(el("circle",{cx:x(gi),cy:y(data[gi].v),r:2.4,fill:"var(--ghost)"}));
+      }
+    }
+
+    // kept area fill under the recent segment
+    var areaFrom = Math.max(0, keptFromIndex);
+    var area = "M"+x(areaFrom)+" "+y(data[areaFrom].v)+" ";
+    for(var ai=areaFrom+1; ai<data.length; ai++){ area += "L"+x(ai)+" "+y(data[ai].v)+" "; }
+    area += "L"+x(data.length-1)+" "+(padT+ih)+" L"+x(areaFrom)+" "+(padT+ih)+" Z";
+    var grad = el("linearGradient",{id:"keptGrad",x1:0,y1:0,x2:0,y2:1});
+    grad.appendChild(el("stop",{offset:"0%","stop-color":"var(--accent)","stop-opacity":0.22}));
+    grad.appendChild(el("stop",{offset:"100%","stop-color":"var(--accent)","stop-opacity":0}));
+    var defs = el("defs",{}); defs.appendChild(grad); svg.appendChild(defs);
+    svg.appendChild(el("path",{d:area,fill:"url(#keptGrad)"}));
+
+    // kept line (solid accent) — recent segment
+    var kPath = el("path",{d:seg(areaFrom, data.length-1), fill:"none", stroke:"var(--accent)","stroke-width":3,"stroke-linecap":"round","stroke-linejoin":"round"});
+    svg.appendChild(kPath);
+    for(var ki=areaFrom; ki<data.length; ki++){
+      svg.appendChild(el("circle",{cx:x(ki),cy:y(data[ki].v),r:3.2,fill:"var(--accent)"}));
+    }
+    // emphasized endpoint
+    var last = data.length-1;
+    svg.appendChild(el("circle",{cx:x(last),cy:y(data[last].v),r:5.5,fill:"var(--surface)",stroke:"var(--accent)","stroke-width":2.5}));
+
+    // 30-day marker between forgotten and kept
+    if(keptFromIndex>0 && range>3){
+      var mx = (x(keptFromIndex)+x(keptFromIndex-1)) / 2 + (x(keptFromIndex)-x(keptFromIndex-1))/2;
+      mx = x(keptFromIndex) - (x(keptFromIndex)-x(keptFromIndex-1))*0.5;
+      svg.appendChild(el("line",{x1:mx,y1:padT-6,x2:mx,y2:padT+ih,stroke:"var(--accent-deep)","stroke-width":1.3,"stroke-dasharray":"4 4",opacity:0.7}));
+      var mlbl = el("text",{x:mx-6,y:padT+6,"text-anchor":"end","font-family":"IBM Plex Mono","font-size":10,fill:"var(--accent-deep)"});
+      mlbl.textContent = "provider's edge";
+      svg.appendChild(mlbl);
+    }
+
+    // simple draw-in animation on the kept line
+    if(!reduce){
+      try{
+        var len = kPath.getTotalLength();
+        kPath.style.strokeDasharray = len;
+        kPath.style.strokeDashoffset = len;
+        kPath.getBoundingClientRect();
+        kPath.style.transition = "stroke-dashoffset 900ms ease";
+        requestAnimationFrame(function(){ kPath.style.strokeDashoffset = "0"; });
+      }catch(e){}
+    }
+  }
+
+  drawChart(14);
+
+  var rbtns = document.querySelectorAll(".rangebar button");
+  rbtns.forEach(function(b){
+    b.addEventListener("click", function(){
+      rbtns.forEach(function(o){ o.setAttribute("aria-pressed","false"); });
+      b.setAttribute("aria-pressed","true");
+      drawChart(parseInt(b.getAttribute("data-range"),10));
+    });
+  });
+
+  /* ----- snapshot timeline bars ----- */
+  var tl = document.getElementById("snapTimeline");
+  if(tl){
+    var heights = [14,18,22,20,26,30,28,34,40,44,52,64,88,78,96,72,86,60,74,66];
+    heights.forEach(function(h,i){
+      var bar = document.createElement("div");
+      bar.className = "snap-bar" + (i < 3 ? " ghost" : "");
+      bar.style.height = h + "%";
+      tl.appendChild(bar);
+    });
+  }
+
+  /* ----- screenshot demo toggle ----- */
+  var dbtns = document.querySelectorAll(".demo-toggle button");
+  var vb = document.getElementById("viewBefore");
+  var va = document.getElementById("viewAfter");
+  var flowSteps = ["f1","f2","f3","f4"].map(function(id){ return document.getElementById(id); });
+  function setView(view){
+    var after = view === "after";
+    if(vb) vb.hidden = after;
+    if(va) va.hidden = !after;
+    flowSteps.forEach(function(s,i){
+      if(!s) return;
+      if(after) s.classList.add("on");
+      else s.classList.toggle("on", i===0);
+    });
+  }
+  setView("before");
+  dbtns.forEach(function(b){
+    b.addEventListener("click", function(){
+      dbtns.forEach(function(o){ o.setAttribute("aria-pressed","false"); });
+      b.setAttribute("aria-pressed","true");
+      setView(b.getAttribute("data-view"));
+    });
+  });
+})();
+</script>
+<script>
+(function(){
+  var site=document.getElementById('site');
+  var frame=document.getElementById('appFrame');
+  var back=document.getElementById('backBtn');
+  var tmpl=document.getElementById('appDoc');
+  var loaded=false;
+  function ensure(){ if(loaded)return; frame.srcdoc=tmpl.innerHTML; loaded=true; }
+  function openApp(){ ensure(); site.hidden=true; frame.hidden=false; back.hidden=false; document.body.classList.add('app-open'); try{window.scrollTo(0,0);}catch(e){} }
+  function openSite(){ site.hidden=false; frame.hidden=true; back.hidden=true; document.body.classList.remove('app-open'); }
+  back.addEventListener('click',openSite);
+  var links=document.querySelectorAll('#site a.btn, #site button.btn');
+  Array.prototype.forEach.call(links,function(a){
+    var t=(a.textContent||'').trim().toLowerCase();
+    if(t.indexOf('start')===0 || t.indexOf('trial')>=0 || t==='talk to us'){
+      a.addEventListener('click',function(e){e.preventDefault();openApp();});
+    }
+  });
+})();
+</script>
+</body>
+</html>
