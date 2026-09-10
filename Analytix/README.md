@@ -15,3 +15,11 @@ Connect your analytics once, preserve every day forever, and understand what cha
 ## Run it
 
 Just open `index.html` in a browser. No build step, no dependencies (fonts load from Google Fonts when online).
+
+## GitHub Pages
+
+This repo includes a GitHub Actions workflow that publishes the `/Analytix` folder to GitHub Pages.
+
+1. In GitHub, open **Settings → Pages**.
+2. Under **Build and deployment**, set **Source** to **GitHub Actions**.
+3. Push to `main` (or `master`) and the workflow will deploy the site.
