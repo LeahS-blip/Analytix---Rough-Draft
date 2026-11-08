@@ -1,5 +1,9 @@
 # Analytix — Rough Draft
 
+> **The working app now lives in [`web/`](../web/README.md)** (Next.js + SQLite): real accounts,
+> CSV/JSON import, Vercel daily snapshots and the dashboard on your own data.
+> The files below are the original single-file design prototype (published to GitHub Pages).
+
 A single-file interactive prototype for **Analytix**: the permanent memory for your website's analytics.
 Connect your analytics once, preserve every day forever, and understand what changed.
 
