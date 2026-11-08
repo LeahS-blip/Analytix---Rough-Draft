@@ -1,6 +1,6 @@
-# Analytix (app)
+# KeepStat (app)
 
-The real version of the Analytix prototype: sign up, add a site, bring in history from
+The real version of the KeepStat prototype: sign up, add a site, bring in history from
 Vercel or a CSV/JSON export, and keep it forever.
 
 ## Run it
@@ -11,7 +11,7 @@ npm run dev        # http://localhost:3000
 ```
 
 Requires Node 22.13+ (uses the built-in `node:sqlite`; Node prints an "experimental" warning, which is expected).
-The database lives in `web/data/analytix.db` (created on first run, gitignored).
+The database lives in `web/data/keepstat.db` (created on first run, gitignored; an older `analytix.db` is used if present).
 
 ## What works
 
@@ -36,8 +36,8 @@ password reset, email.
 | --- | --- |
 | `APP_SECRET` | Key for encrypting source tokens. If unset, a random key is generated once into `data/secret.key` — back it up with the DB, or tokens can't be decrypted. |
 | `CRON_SECRET` | Enables `GET /api/cron` (send `Authorization: Bearer <secret>`) for hosts without a long-running process. |
-| `ANALYTIX_DATA_DIR` | Where the SQLite DB lives (default `./data`). |
-| `ANALYTIX_DISABLE_SCHEDULER=1` | Turn off the in-process hourly scheduler. |
+| `KEEPSTAT_DATA_DIR` | Where the SQLite DB lives (default `./data`). |
+| `KEEPSTAT_DISABLE_SCHEDULER=1` | Turn off the in-process hourly scheduler. |
 
 ## Deploying
 

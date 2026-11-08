@@ -35,7 +35,7 @@ export function SnapshotsView({ site, daily, snapshots, sources }: DashProps) {
   return (
     <>
       <p className="view-intro">
-        Analytix saves a dated snapshot of your numbers every day, so your history survives even when your provider forgets it.
+        KeepStat saves a dated snapshot of your numbers every day, so your history survives even when your provider forgets it.
         Every import is logged here too, with the original file kept as the receipt.
       </p>
       <div className="card">
@@ -147,13 +147,13 @@ export function ImportView({ site }: DashProps) {
         <div className="imp">
           <div className="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12h6M12 9v6" /><rect x="3" y="4" width="18" height="16" rx="3" /></svg></div>
           <h3>Connect a source</h3>
-          <p>Link Vercel Web Analytics. Analytix backfills what Vercel still has, then fetches a snapshot every day.</p>
+          <p>Link Vercel Web Analytics. KeepStat backfills what Vercel still has, then fetches a snapshot every day.</p>
           <button className="btn primary" onClick={openAddSource}>Connect Vercel</button>
         </div>
         <div className="imp">
           <div className="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 15V3M8 7l4-4 4 4" /><path d="M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4" /></svg></div>
           <h3>Upload CSV / JSON</h3>
-          <p>Daily or monthly rows. Analytix finds the date, visitors, page-view and bounce columns for you.</p>
+          <p>Daily or monthly rows. KeepStat finds the date, visitors, page-view and bounce columns for you.</p>
           <div
             className={`dropzone${drag ? " drag" : ""}${busy ? " busy" : ""}`}
             role="button"
@@ -278,7 +278,7 @@ export function SourcesView({ sources }: DashProps) {
   }
   function remove(id: number, label: string) {
     openModal(
-      <Modal title={`Disconnect ${label}?`} desc="Analytix stops fetching from it. Everything it already saved stays in your history.">
+      <Modal title={`Disconnect ${label}?`} desc="KeepStat stops fetching from it. Everything it already saved stays in your history.">
         <div className="modal-actions">
           <button className="btn" onClick={closeModal}>Cancel</button>
           <button
@@ -339,7 +339,7 @@ export function SourcesView({ sources }: DashProps) {
             </div>
             <div>
               <h4>No live source yet</h4>
-              <p>Connect Vercel and Analytix backfills everything it still remembers, then saves a snapshot every day — before the 30-day window erases it.</p>
+              <p>Connect Vercel and KeepStat backfills everything it still remembers, then saves a snapshot every day — before the 30-day window erases it.</p>
               <div className="src-chips">
                 <button className="btn primary sm" onClick={openAddSource}>Connect Vercel</button>
                 {["Google Analytics", "Cloudflare", "Plausible", "Umami"].map((n) => (
@@ -406,7 +406,7 @@ export function AddSourceModal({ siteId }: { siteId: number }) {
 
   if (step === "pick")
     return (
-      <Modal title="Add a source" desc="Pick a platform to connect. Analytix fetches a daily snapshot automatically.">
+      <Modal title="Add a source" desc="Pick a platform to connect. KeepStat fetches a daily snapshot automatically.">
         <div className="source-grid">
           <button className="source-opt" onClick={() => setStep("vercel")}>
             <span className="cd" style={{ background: "#111317" }} />
@@ -424,7 +424,7 @@ export function AddSourceModal({ siteId }: { siteId: number }) {
     );
 
   return (
-    <Modal title="Connect Vercel" desc="Analytix reads daily visitors and page views from Vercel Web Analytics.">
+    <Modal title="Connect Vercel" desc="KeepStat reads daily visitors and page views from Vercel Web Analytics.">
       <ol className="steps-mini">
         <li>Make sure Web Analytics is enabled on the project.</li>
         <li>

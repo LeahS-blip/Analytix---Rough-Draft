@@ -3,7 +3,7 @@ import "./dashboard.css";
 import "./app.css";
 
 export const metadata: Metadata = {
-  title: "Analytix",
+  title: "KeepStat",
   description: "Keep your analytics history forever.",
 };
 

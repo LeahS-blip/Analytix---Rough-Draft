@@ -159,7 +159,7 @@ export function Dashboard(props: DashProps) {
         <aside className="side">
           <Link href="/" className="side-brand">
             <LogoMark />
-            <span className="wordmark">analytix</span>
+            <span className="wordmark">keep<span className="wm-accent">stat</span></span>
           </Link>
 
           <div className="site-wrap">
@@ -270,7 +270,7 @@ export function Dashboard(props: DashProps) {
             {view === "sources" && <SourcesView {...props} />}
             {view === "settings" && <SettingsView {...props} />}
             <div className="foot-note">
-              Analytix · {sources.length ? `${sources.filter((s) => s.active).length} live source${sources.filter((s) => s.active).length === 1 ? "" : "s"} · ` : ""}
+              KeepStat · {sources.length ? `${sources.filter((s) => s.active).length} live source${sources.filter((s) => s.active).length === 1 ? "" : "s"} · ` : ""}
               your data stays in this app&apos;s database
             </div>
           </div>

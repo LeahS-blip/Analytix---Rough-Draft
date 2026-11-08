@@ -25,7 +25,7 @@ async function call<T>(token: string, path: string, params: Record<string, strin
   const url = new URL(API + path);
   for (const [k, v] of Object.entries(params)) if (v) url.searchParams.set(k, v);
   const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}`, "User-Agent": "analytix/0.1" },
+    headers: { Authorization: `Bearer ${token}`, "User-Agent": "keepstat/0.1" },
     cache: "no-store",
     signal: AbortSignal.timeout(20_000),
   });

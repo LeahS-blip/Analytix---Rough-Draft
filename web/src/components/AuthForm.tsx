@@ -41,7 +41,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       <form className="auth-card" onSubmit={submit}>
         <Link href="/" className="brand">
           <LogoMark className="" />
-          <span className="wordmark">analytix</span>
+          <span className="wordmark">keep<span className="wm-accent">stat</span></span>
         </Link>
         <h1>{signup ? "Start keeping your history" : "Welcome back"}</h1>
         <p className="lead">

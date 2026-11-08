@@ -2,7 +2,7 @@ import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
 import path from "node:path";
 
-export const DATA_DIR = process.env.ANALYTIX_DATA_DIR || path.join(process.cwd(), "data");
+export const DATA_DIR = process.env.KEEPSTAT_DATA_DIR || path.join(process.cwd(), "data");
 
 const SCHEMA = `
 PRAGMA journal_mode = WAL;
@@ -76,17 +76,20 @@ CREATE INDEX IF NOT EXISTS snapshots_site ON snapshots(site_id, created_at DESC)
 
 declare global {
   // eslint-disable-next-line no-var
-  var __analytixDb: DatabaseSync | undefined;
+  var __keepstatDb: DatabaseSync | undefined;
 }
 
 export function db(): DatabaseSync {
-  if (!globalThis.__analytixDb) {
+  if (!globalThis.__keepstatDb) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
-    const d = new DatabaseSync(path.join(DATA_DIR, "analytix.db"));
+    // Databases created before the rename are named analytix.db — keep using one if present.
+    const legacy = path.join(DATA_DIR, "analytix.db");
+    const file = fs.existsSync(legacy) && !fs.existsSync(path.join(DATA_DIR, "keepstat.db")) ? legacy : path.join(DATA_DIR, "keepstat.db");
+    const d = new DatabaseSync(file);
     d.exec(SCHEMA);
-    globalThis.__analytixDb = d;
+    globalThis.__keepstatDb = d;
   }
-  return globalThis.__analytixDb;
+  return globalThis.__keepstatDb;
 }
 
 export function tx<T>(fn: () => T): T {

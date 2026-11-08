@@ -68,6 +68,9 @@ th+th,td+td{padding-left:16px}
 .danger:hover{background:color-mix(in srgb,var(--crit) 10%,transparent)!important}
 .spin{display:inline-block;width:13px;height:13px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
 @keyframes sp{to{transform:rotate(360deg)}}
+/* wordmark: keep + accent "stat" */
+.wm-accent{color:var(--accent)}
+
 /* ---------- polish pass ---------- */
 
 /* charts */
