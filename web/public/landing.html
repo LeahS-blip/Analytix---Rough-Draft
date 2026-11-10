@@ -6,8 +6,8 @@
 <title>KeepStat</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- Schibsted Grotesk (a newspaper grotesk) for words, IBM Plex Mono for day stamps and numbers. -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap">
+<!-- SUSE for everything you read, Geist Mono for the code-style details and numbers. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=SUSE:wght@400;500;600;700;800&display=swap">
 <script>
   // Hold the first paint until the fonts are in (max 700ms) so text doesn't jump when they swap.
   (function(){
@@ -19,248 +19,235 @@
 <noscript><style>.fonts-pending body{opacity:1!important}</style></noscript>
 <style>html,body{margin:0}.fonts-pending body{opacity:0}</style>
 <style>
+  /* Dark is the default look; light mode is for people whose system or toggle asks for it. */
   :root{
-    --bg:#F5F3EE;
-    --surface:#FFFFFF;
-    --surface-2:#EDEAE2;
-    --ink:#131311;
-    --ink-soft:#33322D;
-    --muted:#5C5A53;
-    --faint:#6B6960;
-    --line:#E0DCD2;
-    --line-strong:#C9C4B7;
-    --accent:#1E7A4C;        /* kept */
-    --accent-deep:#16613C;
-    --accent-wash:#DDEDE2;
-    --gone:#C2412D;          /* erased */
-    --ghost:#B0AB9E;         /* forgotten data */
-    --ghost-wash:#E6E3DB;
-    --good:#1E7A4C;
-    --rail:168px;
+    --bg:#0B0C0E;
+    --surface:#121317;
+    --surface-2:#191A1F;
+    --ink:#EDEEF0;
+    --ink-soft:#C7C9CE;
+    --muted:#8E929B;
+    --faint:#7A7E87;
+    --line:#22242A;
+    --line-strong:#33363D;
+    --accent:#D4AF62;        /* gold: kept */
+    --accent-deep:#E2C27F;
+    --accent-wash:#2A2416;
+    --on-accent:#0B0C0E;
+    --ghost:#4A4D55;         /* forgotten data */
+    --ghost-wash:#17181C;
+    --good:#D4AF62;
   }
-  :root:not([data-theme="light"]){
-    @media (prefers-color-scheme: dark){
-      --bg:#121210; --surface:#1A1A17; --surface-2:#22221E; --ink:#F1EFE8; --ink-soft:#D8D5CC;
-      --muted:#A6A398; --faint:#959285; --line:#2B2A26; --line-strong:#403E37;
-      --accent:#5BC48A; --accent-deep:#7FD6A5; --accent-wash:#183024; --gone:#F07A63;
-      --ghost:#5B5850; --ghost-wash:#24231F; --good:#5BC48A;
+  :root[data-theme="light"]{
+    --bg:#F6F4EF; --surface:#FFFFFF; --surface-2:#EEEBE3; --ink:#15161A; --ink-soft:#33353B;
+    --muted:#5E616A; --faint:#6D7079; --line:#E2DED4; --line-strong:#CDC8BC;
+    --accent:#85631C; --accent-deep:#6B5015; --accent-wash:#F1E7D0; --on-accent:#FFFFFF;
+    --ghost:#B9B4A8; --ghost-wash:#ECE9E2; --good:#6B5015;
+  }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){
+      --bg:#F6F4EF; --surface:#FFFFFF; --surface-2:#EEEBE3; --ink:#15161A; --ink-soft:#33353B;
+      --muted:#5E616A; --faint:#6D7079; --line:#E2DED4; --line-strong:#CDC8BC;
+      --accent:#85631C; --accent-deep:#6B5015; --accent-wash:#F1E7D0; --on-accent:#FFFFFF;
+      --ghost:#B9B4A8; --ghost-wash:#ECE9E2; --good:#6B5015;
     }
-  }
-  :root[data-theme="dark"]{
-    --bg:#121210; --surface:#1A1A17; --surface-2:#22221E; --ink:#F1EFE8; --ink-soft:#D8D5CC;
-    --muted:#A6A398; --faint:#959285; --line:#2B2A26; --line-strong:#403E37;
-    --accent:#5BC48A; --accent-deep:#7FD6A5; --accent-wash:#183024; --gone:#F07A63;
-    --ghost:#5B5850; --ghost-wash:#24231F; --good:#5BC48A;
   }
 
   *{box-sizing:border-box}
-  body{background:var(--bg);color:var(--ink);font-family:"Schibsted Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:18px;line-height:1.55;margin:0;overflow-x:hidden;-webkit-font-smoothing:antialiased}
-  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+  body{background:var(--bg);color:var(--ink);font-family:"SUSE",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:17px;line-height:1.6;margin:0;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+  .mono{font-family:"Geist Mono",ui-monospace,monospace}
   .tnum{font-variant-numeric:tabular-nums}
-  .wrap{max-width:1120px;margin:0 auto;padding:0 32px}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 32px}
   @media(max-width:560px){.wrap{padding:0 18px}}
   a{color:inherit}
-  h1,h2,h3{margin:0;font-weight:800;letter-spacing:-.025em;text-wrap:balance}
+  h1,h2,h3{margin:0;font-weight:700;letter-spacing:-.03em;text-wrap:balance}
   p{margin:0 0 16px}
 
-  /* ---------- top ---------- */
-  .top{display:flex;align-items:center;justify-content:space-between;gap:16px;height:72px}
-  .brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:800;font-size:21px;letter-spacing:-.03em}
-  .brand .tick{display:grid;grid-template-columns:repeat(4,5px);gap:2px;align-items:end;height:20px}
-  .brand .tick i{display:block;background:var(--ghost)}
-  .brand .tick i:nth-child(1){height:7px}.brand .tick i:nth-child(2){height:11px}.brand .tick i:nth-child(3){height:15px;background:var(--accent)}.brand .tick i:nth-child(4){height:20px;background:var(--accent)}
-  .top nav{display:flex;align-items:center;gap:22px;font-size:15px;font-weight:500}
+  /* ---------- nav ---------- */
+  .top{display:flex;align-items:center;justify-content:space-between;gap:16px;height:72px;border-bottom:1px solid var(--line)}
+  .brand{font-weight:700;font-size:19px;letter-spacing:-.02em;text-decoration:none}
+  .brand span{color:var(--accent)}
+  .top nav{display:flex;align-items:center;gap:20px;font-family:"Geist Mono",monospace;font-size:13px}
   .top nav a{text-decoration:none;color:var(--muted)}
   .top nav a:hover{color:var(--ink)}
-  .top nav a.btn{color:var(--bg)}
-  .top nav a.btn:hover{color:#fff}
-  .theme{background:none;border:1px solid var(--line-strong);color:var(--muted);width:34px;height:34px;border-radius:6px;display:grid;place-items:center;cursor:pointer}
-  .theme:hover{color:var(--ink);border-color:var(--ink)}
-  @media(max-width:760px){.top nav .opt{display:none}}
+  .top nav a.btn{color:var(--accent)}
+  .top nav a.btn:hover{color:var(--on-accent)}
+  .theme{background:none;border:1px solid var(--line-strong);color:var(--muted);width:32px;height:32px;border-radius:6px;display:grid;place-items:center;cursor:pointer}
+  .theme:hover{color:var(--ink);border-color:var(--muted)}
+  @media(max-width:640px){.top nav .opt{display:none}}
 
   /* buttons: the only rounded thing */
-  .btn{display:inline-flex;align-items:center;gap:8px;font-family:inherit;font-size:16px;font-weight:700;letter-spacing:-.01em;text-decoration:none;color:var(--bg);background:var(--ink);border:1.5px solid var(--ink);border-radius:6px;padding:12px 20px;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s,color .15s}
-  .btn:hover{background:var(--accent);border-color:var(--accent);color:#fff}
-  .btn-line{background:transparent;color:var(--ink)}
-  .btn-line:hover{background:transparent;color:var(--accent-deep);border-color:var(--accent)}
-  .top .btn{font-size:14px;padding:8px 14px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:"SUSE",sans-serif;font-size:15px;font-weight:700;text-decoration:none;color:var(--on-accent);background:var(--accent);border:1px solid var(--accent);border-radius:6px;padding:11px 20px;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s,color .15s}
+  .btn:hover{background:var(--accent-deep);border-color:var(--accent-deep)}
+  .btn-line{background:transparent;color:var(--accent)}
+  .btn-line:hover{background:var(--accent);color:var(--on-accent)}
+  .top .btn{font-family:"Geist Mono",monospace;font-size:13px;font-weight:500;padding:6px 12px}
 
   /* ---------- hero ---------- */
-  .hero{padding:56px 0 36px}
-  .hero h1{font-size:clamp(42px,7.4vw,92px);line-height:.98;max-width:13ch}
-  .hero h1 .k{color:var(--accent)}
-  .hero-sub{display:grid;grid-template-columns:1.2fr 1fr;gap:36px;align-items:end;margin-top:32px}
-  @media(max-width:860px){.hero-sub{grid-template-columns:1fr;gap:22px}}
-  .lede{font-size:clamp(18px,2vw,21px);color:var(--ink-soft);max-width:34em;margin:0}
-  .lede b{color:var(--ink)}
-  .hero-act{display:flex;flex-direction:column;gap:12px;align-items:flex-start}
-  .hero-act .row{display:flex;gap:10px;flex-wrap:wrap}
-  .hero-note{font-size:14.5px;color:var(--muted);margin:0}
+  .hero{text-align:center;padding:88px 0 40px}
+  .hero .kicker{font-family:"Geist Mono",monospace;font-size:13px;color:var(--accent)}
+  .hero h1{font-size:clamp(40px,7vw,80px);line-height:1;margin:16px auto 20px;max-width:12ch}
+  .hero .sub{font-size:clamp(17px,2vw,19px);color:var(--muted);max-width:34em;margin:0 auto 30px}
+  .hero .act{display:flex;gap:16px;justify-content:center;align-items:center;flex-wrap:wrap}
+  .hero .act .note{font-family:"Geist Mono",monospace;font-size:13px;color:var(--muted)}
 
-  /* ---------- the chart (drawn by script) ---------- */
-  .board{margin:44px 0 0;background:var(--surface);border:1.5px solid var(--ink)}
-  .chartcard-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:18px 22px 4px;font-family:"IBM Plex Mono",monospace}
-  .chartcard-head .site{font-size:13px;color:var(--muted)}
-  .chartcard-head .site b{color:var(--ink);font-weight:600}
-  .metric-big{font-size:34px;font-weight:600;letter-spacing:-.03em;line-height:1.15}
-  .metric-sub{font-size:13px;color:var(--muted)}
-  .metric-sub .up{color:var(--good);font-weight:600}
-  .forget{font-size:13px;color:var(--gone);text-align:right;line-height:1.5}
-  .forget b{display:block;font-size:22px;font-weight:600;letter-spacing:-.02em}
-  @media(max-width:560px){.chartcard-head{flex-direction:column;gap:6px}.forget{text-align:left}.forget b{display:inline;font-size:13px;letter-spacing:0;margin-left:4px}}
+  /* chart card (drawn by the page script) */
+  .board{max-width:880px;margin:56px auto 0;background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;text-align:left}
+  .chartcard-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:18px 22px 4px;font-family:"Geist Mono",monospace}
+  .chartcard-head .site{font-size:12.5px;color:var(--muted)}
+  .chartcard-head .site b{color:var(--ink);font-weight:500}
+  .metric-big{font-size:30px;font-weight:500;letter-spacing:-.03em;line-height:1.2;color:var(--ink)}
+  .metric-sub{font-size:12.5px;color:var(--muted)}
+  .metric-sub .up{color:var(--accent);font-weight:500}
+  .forget{font-size:12.5px;color:var(--muted);text-align:right}
+  .forget b{display:block;font-weight:500;font-size:18px;color:var(--ink)}
+  @media(max-width:560px){.chartcard-head{flex-direction:column;gap:6px}.forget{text-align:left}.forget b{display:inline;font-size:12.5px;margin-left:4px}}
   .rangebar{display:flex;gap:4px;padding:8px 22px}
-  .rangebar button{font-family:"IBM Plex Mono",monospace;font-size:12.5px;padding:4px 10px;border:1px solid var(--line-strong);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer}
-  .rangebar button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+  .rangebar button{font-family:"Geist Mono",monospace;font-size:12px;padding:4px 10px;border:1px solid var(--line-strong);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer}
+  .rangebar button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
   .chart-wrap{padding:0 10px 4px}
-  .chart-legend{display:flex;gap:20px;flex-wrap:wrap;padding:2px 22px 16px;font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--muted)}
+  #heroChart text{font-family:"Geist Mono",ui-monospace,monospace}
+  .chart-legend{display:flex;gap:20px;flex-wrap:wrap;padding:2px 22px 16px;font-family:"Geist Mono",monospace;font-size:12px;color:var(--muted)}
   .chart-legend span{display:inline-flex;align-items:center;gap:8px}
-  .swatch{width:18px;height:0;border-top:3px solid;display:inline-block}
+  .swatch{width:18px;height:0;border-top:2.5px solid;display:inline-block}
   .swatch.kept{border-color:var(--accent)}
   .swatch.forgot{border-top-style:dashed;border-color:var(--ghost)}
 
-  /* ---------- logbook entries ---------- */
-  .log{margin-top:72px;border-top:1.5px solid var(--ink)}
-  .entry{display:grid;grid-template-columns:var(--rail) 1fr;gap:0 40px;padding:56px 0;border-bottom:1px solid var(--line-strong)}
-  .stamp{font-family:"IBM Plex Mono",monospace;position:relative}
-  .stamp .day{display:block;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
-  .stamp .num{display:block;font-size:56px;font-weight:600;line-height:1;letter-spacing:-.05em;color:var(--ink);margin-top:4px}
-  .stamp.kept .num{color:var(--accent)}
-  .stamp .num.word{font-size:40px}
-  .stamp.gone .num{color:var(--gone)}
-  .stamp .what{display:block;font-size:12.5px;color:var(--muted);margin-top:10px;line-height:1.45;max-width:14ch}
-  .entry h2{font-size:clamp(28px,3.6vw,42px);line-height:1.05;max-width:20ch}
-  .entry .body{max-width:720px}
-  .entry .body > p{color:var(--ink-soft);margin-top:18px}
-  @media(max-width:760px){
-    .entry{grid-template-columns:1fr;padding:44px 0}
-    .stamp{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
-    .stamp .num{font-size:40px;margin:0}
-    .stamp .what{margin:0;max-width:none}
-  }
+  /* ---------- sections ---------- */
+  section{padding:104px 0;border-top:1px solid var(--line)}
+  .head{max-width:620px;margin-bottom:44px}
+  .head.center{margin-left:auto;margin-right:auto;text-align:center}
+  .head .kicker{font-family:"Geist Mono",monospace;font-size:13px;color:var(--accent);display:block;margin-bottom:14px}
+  .head h2{font-size:clamp(30px,4.2vw,46px);line-height:1.05}
+  .head p{color:var(--muted);font-size:18px;margin:18px 0 0}
+
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+  @media(max-width:860px){.two{grid-template-columns:1fr;gap:36px}}
+  .two .head{margin-bottom:0}
 
   /* the spreadsheet */
-  .sheet{margin-top:26px;font-family:"IBM Plex Mono",monospace;font-size:13.5px;background:var(--surface);border:1.5px solid var(--ink);max-width:560px;transform:rotate(-.6deg)}
-  .sheet .r{display:grid;grid-template-columns:40px 1fr 1fr 1.25fr;border-top:1px solid var(--line)}
+  .sheet{font-family:"Geist Mono",monospace;font-size:13px;background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;overflow:hidden}
+  .sheet .r{display:grid;grid-template-columns:42px 1fr 1fr 1.25fr;border-top:1px solid var(--line)}
   .sheet .r:first-child{border-top:0}
-  .sheet .c{padding:8px 11px;border-left:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-soft)}
-  .sheet .c:first-child{border-left:0;text-align:center;color:var(--muted);background:var(--surface-2)}
-  .sheet .head .c{background:var(--surface-2);font-weight:600;color:var(--ink)}
-  .sheet .messy{color:var(--gone)}
-  .aside{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--muted);margin-top:14px}
+  .sheet .c{padding:10px 12px;border-left:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-soft)}
+  .sheet .c:first-child{border-left:0;text-align:center;color:var(--faint);background:var(--surface-2)}
+  .sheet .head-r .c{background:var(--surface-2);color:var(--muted)}
+  .sheet .messy{color:var(--faint);text-decoration:line-through;text-decoration-color:var(--ghost)}
+  .sheet-note{font-family:"Geist Mono",monospace;font-size:12.5px;color:var(--muted);margin-top:12px}
 
-  /* three ways in */
-  .ways{list-style:none;margin:28px 0 0;padding:0;display:grid;gap:0;border-top:1px solid var(--line-strong)}
-  .ways li{display:grid;grid-template-columns:46px 1fr;gap:4px 14px;padding:18px 0;border-bottom:1px solid var(--line-strong)}
-  .ways .n{font-family:"IBM Plex Mono",monospace;font-size:14px;color:var(--accent);padding-top:3px}
-  .ways b{font-size:19px;font-weight:700;letter-spacing:-.01em}
-  .ways p{margin:4px 0 0;color:var(--muted);font-size:16.5px}
-  .works{margin-top:18px;font-size:15px;color:var(--muted)}
-  .works span{font-family:"IBM Plex Mono",monospace;font-size:13.5px;color:var(--ink);white-space:nowrap}
+  /* three ways in: a list */
+  .ways{list-style:none;margin:0;padding:0;border-top:1px solid var(--line-strong)}
+  .ways li{display:grid;grid-template-columns:72px 1fr minmax(0,.9fr);gap:8px 28px;padding:28px 0;border-bottom:1px solid var(--line-strong);align-items:baseline}
+  .ways .n{font-family:"Geist Mono",monospace;font-size:13px;color:var(--accent)}
+  .ways h3{font-size:22px;letter-spacing:-.02em}
+  .ways p{margin:0;color:var(--muted);font-size:16px}
+  @media(max-width:760px){.ways li{grid-template-columns:44px 1fr}.ways p{grid-column:2}}
+  .works{margin-top:22px;font-family:"Geist Mono",monospace;font-size:12.5px;color:var(--muted)}
+  .works b{color:var(--ink-soft);font-weight:400}
 
   /* screenshot demo */
-  .demo-stage{margin-top:28px;background:var(--surface);border:1.5px solid var(--ink);padding:18px;max-width:640px}
+  .demo-stage{background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;padding:18px}
   .demo-toggle{display:flex;gap:4px;margin-bottom:14px}
-  .demo-toggle button{font-family:"IBM Plex Mono",monospace;font-size:12.5px;padding:5px 11px;border:1px solid var(--line-strong);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer}
-  .demo-toggle button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
-  .shot{border:1px dashed var(--line-strong);background:var(--surface-2);padding:14px;display:flex;flex-direction:column;gap:12px;min-height:210px}
-  .shot .cap{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--muted)}
+  .demo-toggle button{font-family:"Geist Mono",monospace;font-size:12px;padding:5px 11px;border:1px solid var(--line-strong);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer}
+  .demo-toggle button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+  .shot{border:1px dashed var(--line-strong);border-radius:4px;background:var(--surface-2);padding:14px;display:flex;flex-direction:column;gap:12px;min-height:212px}
+  .shot .cap{font-family:"Geist Mono",monospace;font-size:12px;color:var(--muted)}
   .shot-metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .shot-metric{background:var(--surface);border:1px solid var(--line);padding:10px 12px}
+  .shot-metric{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:10px 12px}
   .shot-metric .l{font-size:13px;color:var(--muted)}
-  .shot-metric .v{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:21px;letter-spacing:-.02em}
-  .shot-metric .v .hl{background:linear-gradient(transparent 58%, var(--accent-wash) 58%)}
-  .extract-table{font-family:"IBM Plex Mono",monospace;font-size:12.5px;background:var(--surface);border:1px solid var(--line)}
+  .shot-metric .v{font-family:"Geist Mono",monospace;font-weight:500;font-size:20px;color:var(--ink)}
+  .shot-metric .v .hl{border-bottom:2px solid var(--accent)}
+  .extract-table{font-family:"Geist Mono",monospace;font-size:12.5px;background:var(--surface);border:1px solid var(--line);border-radius:4px;overflow:hidden}
   .extract-table .r{display:grid;grid-template-columns:1fr .8fr .8fr 1fr;border-top:1px solid var(--line)}
   .extract-table .r:first-child{border-top:0}
-  .extract-table .c{padding:6px 9px;border-left:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .extract-table .c{padding:6px 9px;border-left:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-soft)}
   .extract-table .c:first-child{border-left:0}
-  .extract-table .head .c{background:var(--surface-2);font-weight:600}
-  .found{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--good)}
-  .demo-flow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:12px;font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--muted)}
-  .demo-flow .s{padding:1px 7px;border:1px solid transparent;border-radius:6px}
-  .demo-flow .s.on{border-color:var(--accent);color:var(--accent-deep)}
+  .extract-table .head .c{background:var(--surface-2);color:var(--muted)}
+  .found{font-family:"Geist Mono",monospace;font-size:12.5px;color:var(--accent)}
+  .demo-flow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:12px;font-family:"Geist Mono",monospace;font-size:12px;color:var(--faint)}
+  .demo-flow .s{padding:1px 7px;border:1px solid transparent;border-radius:4px}
+  .demo-flow .s.on{border-color:var(--accent);color:var(--accent)}
+  .points{list-style:none;margin:26px 0 0;padding:0}
+  .points li{padding:12px 0 12px 22px;position:relative;color:var(--ink-soft);border-top:1px solid var(--line)}
+  .points li::before{content:"";position:absolute;left:0;top:23px;width:10px;height:1.5px;background:var(--accent)}
+  .points b{color:var(--ink);font-weight:600}
 
-  /* snapshots */
-  .snap-card{margin-top:28px;background:var(--surface);border:1.5px solid var(--ink);padding:18px 20px;max-width:640px}
-  .snap-card .site{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--muted)}
-  .snap-timeline{display:flex;gap:5px;align-items:flex-end;height:120px;margin:10px 0}
-  .snap-bar{flex:1;background:var(--accent-wash);border:1px solid var(--accent);border-bottom:0;min-height:8px}
-  .snap-bar.ghost{background:var(--ghost-wash);border-color:var(--ghost);border-style:dashed}
-  .snap-scale{display:flex;justify-content:space-between;font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--muted)}
-  .snap-count{display:flex;align-items:baseline;gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
-  .snap-count .n{font-family:"IBM Plex Mono",monospace;font-size:28px;font-weight:600;color:var(--accent);letter-spacing:-.03em}
-  .snap-count .t{font-size:14px;color:var(--muted)}
-  .gets{list-style:none;margin:22px 0 0;padding:0}
-  .gets li{padding:10px 0 10px 26px;position:relative;color:var(--ink-soft);border-bottom:1px solid var(--line)}
-  .gets li::before{content:"";position:absolute;left:0;top:19px;width:12px;height:2px;background:var(--accent)}
-  .transcript{margin-top:22px;font-family:"IBM Plex Mono",monospace;font-size:14.5px;line-height:1.6;border-left:3px solid var(--accent);padding:4px 0 4px 18px;max-width:640px}
+  /* the vault: snapshot bars */
+  .vault{max-width:720px;margin:0 auto;text-align:center}
+  .snap-timeline{display:flex;gap:5px;align-items:flex-end;height:150px;margin:0 auto 10px}
+  .snap-bar{flex:1;background:var(--accent);opacity:.9;min-height:8px;border-radius:2px 2px 0 0}
+  .snap-bar.ghost{background:transparent;border:1px dashed var(--ghost);border-bottom:0;opacity:1}
+  .snap-scale{display:flex;justify-content:space-between;font-family:"Geist Mono",monospace;font-size:11.5px;color:var(--muted);border-top:1px solid var(--line-strong);padding-top:8px}
+  .snap-count{margin-top:26px;font-family:"Geist Mono",monospace}
+  .snap-count .n{display:block;font-size:clamp(36px,5vw,52px);font-weight:500;letter-spacing:-.04em;color:var(--accent);line-height:1.1}
+  .snap-count .t{font-size:13px;color:var(--muted)}
+  .gets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin:56px auto 0;max-width:880px;text-align:left;border-top:1px solid var(--line-strong)}
+  .gets div{padding:20px 22px 0 0}
+  .gets div + div{padding-left:22px;border-left:1px solid var(--line)}
+  .gets b{display:block;color:var(--ink);font-weight:600;margin-bottom:4px}
+  .gets span{color:var(--muted);font-size:15.5px}
+  @media(max-width:760px){.gets{grid-template-columns:1fr}.gets div,.gets div + div{padding:16px 0;border-left:0;border-bottom:1px solid var(--line)}}
+  .gets-list{max-width:640px;margin:56px auto 0;text-align:left}
+  .transcript{max-width:640px;margin:56px auto 0;text-align:left;font-family:"Geist Mono",monospace;font-size:14px;line-height:1.7;background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;padding:18px 20px}
   .transcript .q{color:var(--muted)}
-  .transcript .a{margin-top:6px}
-  .transcript .hl{color:var(--accent-deep);font-weight:600}
-  .fine{font-size:14.5px;color:var(--muted);margin-top:14px}
+  .transcript .q::before{content:"$ ";color:var(--accent)}
+  .transcript .a{color:var(--ink-soft);margin-top:8px}
+  .transcript .hl{color:var(--accent)}
+  .transcript-note{font-family:"Geist Mono",monospace;font-size:12.5px;color:var(--muted);margin-top:12px}
 
-  /* ---------- pricing ---------- */
-  .pricing{padding:72px 0 0}
-  .pricing h2{font-size:clamp(32px,4.4vw,52px);line-height:1.02;max-width:16ch}
-  .pricing .intro{color:var(--ink-soft);margin:16px 0 30px;max-width:36em}
-  .plans{border-top:1.5px solid var(--ink)}
-  .plan{display:grid;grid-template-columns:1.1fr .7fr 2fr auto;gap:10px 28px;align-items:center;padding:26px 0;border-bottom:1px solid var(--line-strong)}
-  .plan h3{font-size:26px;letter-spacing:-.02em}
+  /* pricing: ruled rows */
+  .plans{border-top:1px solid var(--line-strong)}
+  .plan{display:grid;grid-template-columns:1.1fr .6fr 2fr auto;gap:10px 30px;align-items:center;padding:28px 0;border-bottom:1px solid var(--line-strong)}
+  .plan h3{font-size:24px;letter-spacing:-.02em}
   .plan .for{font-size:14.5px;color:var(--muted);margin:2px 0 0}
-  .plan .amt{font-family:"IBM Plex Mono",monospace;font-size:34px;font-weight:600;letter-spacing:-.04em;line-height:1}
-  .plan .amt small{display:block;font-size:12.5px;font-weight:400;letter-spacing:0;color:var(--muted);margin-top:6px}
-  .plan .inc{font-size:16px;color:var(--ink-soft);margin:0}
-  .plan .btn{justify-content:center;min-width:190px}
+  .plan .amt{font-family:"Geist Mono",monospace;font-size:30px;font-weight:500;letter-spacing:-.04em;line-height:1;color:var(--ink)}
+  .plan .amt small{display:block;font-size:12px;font-weight:400;letter-spacing:0;color:var(--muted);margin-top:6px}
+  .plan .inc{font-size:15.5px;color:var(--ink-soft);margin:0}
+  .plan .btn{min-width:180px}
   .plan.pick .amt{color:var(--accent)}
   @media(max-width:900px){
     .plan{grid-template-columns:1fr auto;align-items:start}
     .plan .inc,.plan .btn{grid-column:1 / -1}
     .plan .amt{text-align:right}
   }
-  .storage{font-size:15px;color:var(--muted);margin:20px 0 0;max-width:44em}
+  .storage{font-size:15px;color:var(--muted);margin:22px 0 0}
 
-  /* ---------- end ---------- */
-  .end{margin:88px 0 0;background:#131311;color:#F1EFE8;border:1.5px solid var(--line-strong);padding:clamp(40px,6vw,72px) clamp(24px,5vw,64px)}
-  .end h2{font-size:clamp(32px,5vw,60px);line-height:1;max-width:14ch}
-  .end h2 .k{color:#5BC48A}
-  .end p{color:#C9C6BC;margin:18px 0 26px;max-width:32em;font-size:19px}
-  .end .btn{background:#F1EFE8;color:#131311;border-color:#F1EFE8}
-  .end .btn:hover{background:var(--accent);border-color:var(--accent);color:#fff}
-  footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px 24px;padding:26px 0 44px;font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--muted)}
+  /* closing */
+  .end{text-align:center}
+  .end h2{font-size:clamp(34px,5.4vw,60px);line-height:1.02;max-width:14ch;margin:0 auto}
+  .end h2 span{color:var(--accent)}
+  .end p{color:var(--muted);font-size:18px;margin:20px auto 30px;max-width:30em}
+  footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px 24px;padding:28px 0 44px;border-top:1px solid var(--line);font-family:"Geist Mono",monospace;font-size:12.5px;color:var(--muted)}
 
-  :focus-visible{outline:2.5px solid var(--accent);outline-offset:3px}
-  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.sheet{transform:none}}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 <div id="site">
 <div class="wrap">
   <header class="top">
-    <a class="brand" href="#"><span class="tick" aria-hidden="true"><i></i><i></i><i></i><i></i></span>keepstat</a>
+    <a class="brand" href="#">keepstat<span>_</span></a>
     <nav>
-      <a class="opt" href="#day31">The problem</a>
-      <a class="opt" href="#how">How it works</a>
-      <a class="opt" href="#pricing">Pricing</a>
+      <a class="opt" href="#problem">the problem</a>
+      <a class="opt" href="#how">how it works</a>
+      <a class="opt" href="#pricing">pricing</a>
       <button class="theme" id="themeToggle" aria-label="Toggle light and dark theme" title="Toggle theme">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
       </button>
-      <a class="opt" href="/login">Sign in</a>
-      <a href="/signup" class="btn">Start free</a>
+      <a class="opt" href="/login">sign in</a>
+      <a href="/signup" class="btn btn-line">Start free</a>
     </nav>
   </header>
 
   <main>
-    <section class="hero">
-      <h1>Your analytics forget a day <span class="k">every day.</span></h1>
-      <div class="hero-sub">
-        <p class="lede">Vercel, Plausible and the rest only remember the last month or two. <b>KeepStat connects to them and keeps every day</b>, so your launch week is still there next year.</p>
-        <div class="hero-act">
-          <div class="row">
-            <a href="#pricing" class="btn">Start free with one site</a>
-            <a href="#how" class="btn btn-line">How it works</a>
-          </div>
-          <p class="hero-note">No tracking script. Your visitors never touch us.</p>
-        </div>
+    <div class="hero">
+      <div class="kicker">vercel forgets after 30 days</div>
+      <h1>A vault for your analytics.</h1>
+      <p class="sub">KeepStat takes a snapshot of your numbers every day and locks it away. Your history stays, even after your provider deletes it.</p>
+      <div class="act">
+        <a href="#pricing" class="btn">Start free with one site</a>
+        <span class="note">no card · no tracking script</span>
       </div>
 
       <div class="board" id="heroCard">
@@ -285,129 +272,151 @@
           <span><i class="swatch forgot"></i> forgotten by your provider</span>
         </div>
       </div>
-    </section>
-
-    <div class="log">
-      <article class="entry" id="day31">
-        <div class="stamp gone"><span class="day">Day</span><span class="num">31</span><span class="what">your first day falls off the end</span></div>
-        <div class="body">
-          <h2>Vercel remembers a month. Then it starts deleting.</h2>
-          <p>On the free plan you get a rolling 30-day window. Every day the oldest day drops off the edge. Launch numbers, your first viral spike, last quarter. Gone, with no export and no way back.</p>
-          <p>So the history gets copied into a spreadsheet by hand. Then your backup, a Google Sheet you dread opening, falls apart:</p>
-          <div class="sheet" aria-label="A messy spreadsheet with inconsistent columns">
-            <div class="r head"><div class="c">#</div><div class="c">date</div><div class="c">visits</div><div class="c">notes??</div></div>
-            <div class="r"><div class="c">41</div><div class="c">Jun '26</div><div class="c">16800</div><div class="c messy">spike?</div></div>
-            <div class="r"><div class="c">42</div><div class="c">jul</div><div class="c messy">15,2k</div><div class="c messy">—</div></div>
-            <div class="r"><div class="c">43</div><div class="c messy">(missed)</div><div class="c messy"> </div><div class="c messy"> </div></div>
-            <div class="r"><div class="c">44</div><div class="c">8/26</div><div class="c">17900</div><div class="c messy">diff format</div></div>
-          </div>
-          <p class="aside">Three date formats, a "k", and a month nobody filled in. We built KeepStat because this happened to us.</p>
-        </div>
-      </article>
-
-      <article class="entry" id="how">
-        <div class="stamp kept"><span class="day">Day</span><span class="num word">Today</span><span class="what">you connect KeepStat, once</span></div>
-        <div class="body">
-          <h2>Get your numbers in once. Keep them for good.</h2>
-          <ol class="ways">
-            <li><span class="n">01</span><div><b>Connect a source.</b><p>Link Vercel, Google Analytics, Cloudflare or Plausible. From then on KeepStat takes a snapshot every day by itself. Start here if you can.</p></div></li>
-            <li><span class="n">02</span><div><b>Upload a CSV or JSON.</b><p>Drag in an export you already have. KeepStat works out which column is the date and which is visitors, then backfills your whole timeline.</p></div></li>
-            <li><span class="n">03</span><div><b>Paste a screenshot.</b><p>No export button? Paste a picture of the dashboard. AI reads the numbers, you check them, then they're saved. The image stays next to the data as a receipt.</p></div></li>
-          </ol>
-          <p class="works">Works with <span>Vercel</span>, <span>Google Analytics</span>, <span>Cloudflare</span>, <span>Plausible</span>, <span>Umami</span>, <span>Stripe</span> and any <span>CSV / JSON</span>. Shopify is next.</p>
-
-          <div class="demo-stage" id="extract">
-            <div class="demo-toggle" role="group" aria-label="Before or after extraction">
-              <button data-view="before" aria-pressed="true">Screenshot in</button>
-              <button data-view="after" aria-pressed="false">Data out</button>
-            </div>
-            <div class="shot" id="viewBefore">
-              <span class="cap">vercel-analytics-aug.png</span>
-              <div class="shot-metrics">
-                <div class="shot-metric"><div class="l">Visitors</div><div class="v"><span class="hl">17,904</span></div></div>
-                <div class="shot-metric"><div class="l">Page views</div><div class="v"><span class="hl">31,208</span></div></div>
-                <div class="shot-metric"><div class="l">Bounce rate</div><div class="v"><span class="hl">42.1%</span></div></div>
-                <div class="shot-metric"><div class="l">Top page</div><div class="v" style="font-size:16px">/projects</div></div>
-              </div>
-            </div>
-            <div class="shot" id="viewAfter" hidden>
-              <span class="cap">extracted · 30 dated rows</span>
-              <div class="extract-table">
-                <div class="r head"><div class="c">date</div><div class="c">visitors</div><div class="c">views</div><div class="c">top page</div></div>
-                <div class="r"><div class="c">Aug 26</div><div class="c">612</div><div class="c">1,004</div><div class="c">/projects</div></div>
-                <div class="r"><div class="c">Aug 25</div><div class="c">589</div><div class="c">972</div><div class="c">/</div></div>
-                <div class="r"><div class="c">Aug 24</div><div class="c">521</div><div class="c">861</div><div class="c">/blog</div></div>
-                <div class="r"><div class="c">…</div><div class="c">…</div><div class="c">…</div><div class="c">…</div></div>
-              </div>
-              <div class="found">Found 7 metrics across 30 days. Check them, then save.</div>
-            </div>
-            <div class="demo-flow">
-              <span class="s" id="f1">drop</span><span>→</span><span class="s" id="f2">read</span><span>→</span><span class="s" id="f3">confirm</span><span>→</span><span class="s" id="f4">kept</span>
-            </div>
-          </div>
-        </div>
-      </article>
-
-      <article class="entry" id="history">
-        <div class="stamp kept"><span class="day">Day</span><span class="num">365</span><span class="what">launch week is still there</span></div>
-        <div class="body">
-          <h2>A year later, nothing's missing.</h2>
-          <p>Every day KeepStat saves a dated snapshot of your numbers. If your provider wipes the past, your copy doesn't change.</p>
-          <div class="snap-card">
-            <div class="site">daily snapshots · leahbuilds.dev</div>
-            <div class="snap-timeline" id="snapTimeline" aria-hidden="true"></div>
-            <div class="snap-scale"><span>Jan '26</span><span>Apr</span><span>Aug</span></div>
-            <div class="snap-count"><span class="n tnum">184,392</span><span class="t">data points kept since 4 January 2026</span></div>
-          </div>
-          <ul class="gets">
-            <li>6-month, 1-year and 3-year views, plus this month next to the same month last year.</li>
-            <li>Any week you remember, with the exact numbers.</li>
-            <li>CSV or a shareable report whenever you want. Your data leaves as easily as it came in.</li>
-          </ul>
-          <div class="transcript">
-            <div class="q">&gt; How has my site done since launch?</div>
-            <div class="a">Since January you've had <span class="hl">184,392 visitors</span>. Traffic climbed <span class="hl">37%</span> between March and August. The biggest spike was in <span class="hl">June</span>, 32% over May.</div>
-          </div>
-          <p class="fine">Asking your history questions like this comes with the Archivist plan.</p>
-        </div>
-      </article>
     </div>
+  </main>
+</div>
 
-    <section class="pricing" id="pricing">
-      <h2>You pay to keep your history. Not to rent a hard drive.</h2>
-      <p class="intro">Every plan keeps every day. The plans differ in how many sites you have and what you do with the history.</p>
-      <div class="plans">
-        <div class="plan">
-          <div><h3>Keeper</h3><p class="for">One site you never want to lose.</p></div>
-          <div class="amt">$0<small>forever</small></div>
-          <p class="inc">1 connected site · daily snapshots · CSV, JSON and screenshot import · 1 GB of history</p>
-          <a href="#" class="btn btn-line">Start free</a>
-        </div>
-        <div class="plan pick">
-          <div><h3>Archivist</h3><p class="for">Makers with a few projects and real history.</p></div>
-          <div class="amt">$9<small>a month</small></div>
-          <p class="inc">10 connected sites · multi-year trends and comparisons · Ask-AI over your whole history · 25 GB</p>
-          <a href="#" class="btn">Start 14-day trial</a>
-        </div>
-        <div class="plan">
-          <div><h3>Studio</h3><p class="for">Agencies keeping history for clients.</p></div>
-          <div class="amt">$29<small>a month</small></div>
-          <p class="inc">Unlimited sites · client workspaces and branded reports · team access · 250 GB</p>
-          <a href="#" class="btn btn-line">Talk to us</a>
+<section id="problem">
+  <div class="wrap two">
+    <div class="head">
+      <h2>Vercel remembers a month. Then it deletes.</h2>
+      <p>On the free plan you get a rolling 30-day window, and every day the oldest day drops off. Launch week, your first viral spike, last quarter. Gone, with no export.</p>
+      <p>So the numbers end up copied into a spreadsheet by hand. Then your backup, a Google Sheet you dread opening, falls apart.</p>
+    </div>
+    <div>
+      <div class="sheet" aria-label="A messy spreadsheet with inconsistent columns">
+        <div class="r head-r"><div class="c">#</div><div class="c">date</div><div class="c">visits</div><div class="c">notes??</div></div>
+        <div class="r"><div class="c">41</div><div class="c">Jun '26</div><div class="c">16800</div><div class="c messy">spike?</div></div>
+        <div class="r"><div class="c">42</div><div class="c">jul</div><div class="c messy">15,2k</div><div class="c messy">—</div></div>
+        <div class="r"><div class="c">43</div><div class="c messy">(missed)</div><div class="c messy"> </div><div class="c messy"> </div></div>
+        <div class="r"><div class="c">44</div><div class="c">8/26</div><div class="c">17900</div><div class="c messy">diff format</div></div>
+      </div>
+      <p class="sheet-note">three date formats, a "k", and a month nobody filled in</p>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <div class="head">
+      <h2>Get your numbers in once. Keep them for good.</h2>
+    </div>
+    <ol class="ways">
+      <li><span class="n">01</span><h3>Connect a source</h3><p>Link Vercel, Google Analytics, Cloudflare or Plausible. KeepStat takes a snapshot every day after that, on its own.</p></li>
+      <li><span class="n">02</span><h3>Upload a CSV or JSON</h3><p>Drop in an export you already have. KeepStat finds the date and visitor columns and backfills your timeline.</p></li>
+      <li><span class="n">03</span><h3>Paste a screenshot</h3><p>No export button? AI reads the numbers off a screenshot, you check them, then they're saved.</p></li>
+    </ol>
+    <p class="works">works with <b>vercel</b> · <b>google analytics</b> · <b>cloudflare</b> · <b>plausible</b> · <b>umami</b> · <b>stripe</b> · <b>csv / json</b> · shopify soon</p>
+  </div>
+</section>
+
+<section id="extract">
+  <div class="wrap two">
+    <div class="head">
+      <h2>If you can see it, KeepStat can save it.</h2>
+      <p>A screenshot of any dashboard turns into dated rows you can keep.</p>
+      <ul class="points">
+        <li><b>Reads any dashboard.</b> Even a client's tool you don't control.</li>
+        <li><b>You check before it saves.</b> Nothing lands in your history until you say so.</li>
+        <li><b>The original stays.</b> The image is filed next to the data as a receipt.</li>
+      </ul>
+    </div>
+    <div class="demo-stage">
+      <div class="demo-toggle" role="group" aria-label="Before or after extraction">
+        <button data-view="before" aria-pressed="true">screenshot in</button>
+        <button data-view="after" aria-pressed="false">data out</button>
+      </div>
+      <div class="shot" id="viewBefore">
+        <span class="cap">vercel-analytics-aug.png</span>
+        <div class="shot-metrics">
+          <div class="shot-metric"><div class="l">Visitors</div><div class="v"><span class="hl">17,904</span></div></div>
+          <div class="shot-metric"><div class="l">Page views</div><div class="v"><span class="hl">31,208</span></div></div>
+          <div class="shot-metric"><div class="l">Bounce rate</div><div class="v"><span class="hl">42.1%</span></div></div>
+          <div class="shot-metric"><div class="l">Top page</div><div class="v" style="font-size:16px">/projects</div></div>
         </div>
       </div>
-      <p class="storage">Need more room? Extra history is $3 per 50 GB a month, priced close to what the storage costs us.</p>
-    </section>
+      <div class="shot" id="viewAfter" hidden>
+        <span class="cap">extracted · 30 dated rows</span>
+        <div class="extract-table">
+          <div class="r head"><div class="c">date</div><div class="c">visitors</div><div class="c">views</div><div class="c">top page</div></div>
+          <div class="r"><div class="c">Aug 26</div><div class="c">612</div><div class="c">1,004</div><div class="c">/projects</div></div>
+          <div class="r"><div class="c">Aug 25</div><div class="c">589</div><div class="c">972</div><div class="c">/</div></div>
+          <div class="r"><div class="c">Aug 24</div><div class="c">521</div><div class="c">861</div><div class="c">/blog</div></div>
+          <div class="r"><div class="c">…</div><div class="c">…</div><div class="c">…</div><div class="c">…</div></div>
+        </div>
+        <div class="found">found 7 metrics across 30 days · ready to save</div>
+      </div>
+      <div class="demo-flow">
+        <span class="s" id="f1">drop</span><span>→</span><span class="s" id="f2">read</span><span>→</span><span class="s" id="f3">confirm</span><span>→</span><span class="s" id="f4">kept</span>
+      </div>
+    </div>
+  </div>
+</section>
 
-    <section class="end">
-      <h2>Start keeping today. <span class="k">Every day you wait is one you lose.</span></h2>
-      <p>Your first site is free forever, and connecting it takes about two minutes.</p>
-      <a href="#" class="btn">Start free, no card needed</a>
-    </section>
-  </main>
+<section id="history">
+  <div class="wrap">
+    <div class="head center">
+      <h2>Every day goes into the vault.</h2>
+      <p>KeepStat saves a dated snapshot daily. If your provider wipes the past, your copy doesn't change.</p>
+    </div>
+    <div class="vault">
+      <div class="snap-timeline" id="snapTimeline" aria-hidden="true"></div>
+      <div class="snap-scale"><span>Jan '26</span><span>Apr</span><span>Aug</span></div>
+      <div class="snap-count"><span class="n tnum">184,392</span><span class="t">data points kept for leahbuilds.dev since 4 January 2026</span></div>
+    </div>
+    <ul class="points gets-list">
+      <li><b>Real trends.</b> 6-month, 1-year and 3-year views, plus this month against the same month last year.</li>
+      <li><b>Search your past.</b> Jump to any week you remember and pull the exact numbers.</li>
+      <li><b>Export anytime.</b> CSV or a shareable report. Your data leaves as easily as it came in.</li>
+    </ul>
+    <div class="transcript">
+      <div class="q">how has my site done since launch?</div>
+      <div class="a">Since January you've had <span class="hl">184,392 visitors</span>. Traffic climbed <span class="hl">37%</span> between March and August. The biggest spike was in <span class="hl">June</span>, 32% over May.</div>
+    </div>
+    <p class="transcript-note" style="text-align:center">ask-ai over your history comes with the Archivist plan</p>
+  </div>
+</section>
 
+<section id="pricing">
+  <div class="wrap">
+    <div class="head">
+      <h2>You pay to keep your history. Not to rent a hard drive.</h2>
+    </div>
+    <div class="plans">
+      <div class="plan">
+        <div><h3>Keeper</h3><p class="for">One site you never want to lose.</p></div>
+        <div class="amt">$0<small>forever</small></div>
+        <p class="inc">1 connected site · daily snapshots · CSV, JSON and screenshot import · 1 GB of history</p>
+        <a href="#" class="btn btn-line">Start free</a>
+      </div>
+      <div class="plan pick">
+        <div><h3>Archivist</h3><p class="for">Makers with a few projects and real history.</p></div>
+        <div class="amt">$9<small>a month</small></div>
+        <p class="inc">10 connected sites · multi-year trends and comparisons · Ask-AI over your whole history · 25 GB</p>
+        <a href="#" class="btn">Start 14-day trial</a>
+      </div>
+      <div class="plan">
+        <div><h3>Studio</h3><p class="for">Agencies keeping history for clients.</p></div>
+        <div class="amt">$29<small>a month</small></div>
+        <p class="inc">Unlimited sites · client workspaces and branded reports · team access · 250 GB</p>
+        <a href="#" class="btn btn-line">Talk to us</a>
+      </div>
+    </div>
+    <p class="storage">Need more room? Extra history is $3 per 50 GB a month, priced close to what the storage costs us.</p>
+  </div>
+</section>
+
+<section class="end">
+  <div class="wrap">
+    <h2>Every day you wait is <span>one you lose.</span></h2>
+    <p>Your first site is free forever, and connecting it takes about two minutes.</p>
+    <a href="#" class="btn">Start free, no card needed</a>
+  </div>
+</section>
+
+<div class="wrap">
   <footer>
-    <span>keepstat · never lose a day of your data again</span>
+    <span>keepstat_ · never lose a day of your data again</span>
     <a href="/login">sign in</a>
   </footer>
 </div>
