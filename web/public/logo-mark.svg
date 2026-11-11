@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-6 -10 404 326" fill="none" role="img" aria-label="KeepStat">
+  <!-- K stem -->
+  <path d="M2 64 Q2 52 13 45 L101 8 Q116 2 116 17 L116 146 L2 232 Z" fill="#111110"/>
+  <!-- K lower leg -->
+  <path d="M8 312 L196 162 Q212 150 228 163 L389 294 Q397 304 384 312 L254 312 Q246 312 240 306 L172 236 L64 307 Q57 312 46 312 Z" fill="#111110"/>
+  <!-- the kept line -->
+  <path d="M2 270 L196 124 Q204 118 214 118 L254 118 Q262 118 268 112 L340 40" stroke="#F25217" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="352" cy="28" r="32" fill="#F25217"/>
+</svg>

@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>KeepStat</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Exo 2 (heavy italic) for the logo and headlines, Host Grotesk for reading, Fragment Mono for numbers. -->
@@ -78,7 +79,9 @@
   /* nav */
   .top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 36px;border-bottom:1px solid var(--line)}
   @media(max-width:560px){.top{padding:14px 18px}}
-  .brand{font-family:"Exo 2",sans-serif;font-style:italic;font-weight:900;font-size:22px;letter-spacing:-.01em;text-decoration:none}
+  .brand{display:inline-flex;align-items:center;gap:10px;font-family:"Exo 2",sans-serif;font-style:italic;font-weight:900;font-size:22px;letter-spacing:-.01em;text-decoration:none}
+  .brand .mark{width:34px;height:28px;flex:none}
+  .brand i{font-style:inherit;color:var(--accent)}
   .top nav{display:flex;align-items:center;gap:22px;font-size:15px}
   .top nav a{text-decoration:none;color:var(--muted)}
   .top nav a:hover{color:var(--ink)}
@@ -239,7 +242,7 @@
 <div id="site">
 <div class="sheetwrap">
   <header class="top">
-    <a class="brand" href="#">KeepStat</a>
+    <a class="brand" href="#"><svg class="mark" viewBox="-6 -10 404 326" fill="none" aria-hidden="true"><path d="M2 64 Q2 52 13 45 L101 8 Q116 2 116 17 L116 146 L2 232 Z" fill="var(--ink)"/><path d="M8 312 L196 162 Q212 150 228 163 L389 294 Q397 304 384 312 L254 312 Q246 312 240 306 L172 236 L64 307 Q57 312 46 312 Z" fill="var(--ink)"/><path d="M2 270 L196 124 Q204 118 214 118 L254 118 Q262 118 268 112 L340 40" stroke="var(--accent)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/><circle cx="352" cy="28" r="32" fill="var(--accent)"/></svg><span>Keep<i>Stat</i></span></a>
     <nav>
       <a class="opt" href="#problem">The problem</a>
       <a class="opt" href="#how">How it works</a>
