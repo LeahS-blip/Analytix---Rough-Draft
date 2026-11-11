@@ -121,9 +121,23 @@ declare global {
   var __keepstatDb: Promise<Db> | undefined;
 }
 
+/**
+ * The Postgres connection string. Vercel's Neon integration names it DATABASE_URL / POSTGRES_URL,
+ * or e.g. STORAGE_DATABASE_URL when a custom prefix is set, so accept any of those (pooled ones only).
+ */
+export function databaseUrl(): string | undefined {
+  const env = process.env;
+  if (env.DATABASE_URL) return env.DATABASE_URL;
+  if (env.POSTGRES_URL) return env.POSTGRES_URL;
+  const key = Object.keys(env)
+    .filter((k) => /(^|_)(DATABASE_URL|POSTGRES_URL)$/.test(k))
+    .sort()[0];
+  return key ? env[key] : undefined;
+}
+
 export function db(): Promise<Db> {
   if (!globalThis.__keepstatDb) {
-    const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+    const url = databaseUrl();
     if (!url && process.env.VERCEL)
       throw new Error("DATABASE_URL is not set. Add a Neon database to this Vercel project (Storage tab).");
     globalThis.__keepstatDb = (url ? connectPostgres(url) : connectPglite()).catch((e) => {
