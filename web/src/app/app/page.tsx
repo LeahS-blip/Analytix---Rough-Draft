@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AppHome() {
   const user = await requireUser();
-  const sites = listSites(user.id);
+  const sites = await listSites(user.id);
   if (sites.length) redirect(`/app/${sites[0].id}/overview`);
   return <NewSiteForm first />;
 }

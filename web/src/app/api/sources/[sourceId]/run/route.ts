@@ -9,7 +9,7 @@ type Ctx = { params: Promise<{ sourceId: string }> };
 /** POST — capture a snapshot now. */
 export const POST = handle(async (_req: Request, ctx: Ctx) => {
   const user = await apiUser();
-  const src = getSourceForUser(user.id, int((await ctx.params).sourceId));
+  const src = await getSourceForUser(user.id, int((await ctx.params).sourceId));
   const r = await runSource(src.id);
   if (!r.ok) throw new HttpError(502, r.error || "Snapshot failed.");
   return NextResponse.json(r);

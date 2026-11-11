@@ -13,17 +13,17 @@ const cell = (v: unknown) => {
 /** GET ?granularity=day|month → CSV download */
 export const GET = handle(async (req: Request, ctx: Ctx) => {
   const user = await apiUser();
-  const site = getSite(user.id, int((await ctx.params).siteId));
+  const site = await getSite(user.id, int((await ctx.params).siteId));
   const g = new URL(req.url).searchParams.get("granularity") === "day" ? "day" : "month";
   const lines =
     g === "day"
       ? [
           "date,visitors,page_views,bounce_rate",
-          ...dailyMetrics(site.id).map((r) => [r.date, r.visitors, r.pageviews, r.bounce_rate].map(cell).join(",")),
+          ...(await dailyMetrics(site.id)).map((r) => [r.date, r.visitors, r.pageviews, r.bounce_rate].map(cell).join(",")),
         ]
       : [
           "month,visitors,page_views,bounce_rate,days_of_data",
-          ...monthlyMetrics(site.id).map((r) =>
+          ...(await monthlyMetrics(site.id)).map((r) =>
             [r.month, r.visitors, r.pageviews, r.bounce_rate == null ? null : r.bounce_rate.toFixed(1), r.granularity === "day" ? r.days : "monthly total"]
               .map(cell)
               .join(",")

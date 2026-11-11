@@ -2,6 +2,8 @@ import { runDueSources } from "./snapshots";
 
 export function startScheduler() {
   if (process.env.KEEPSTAT_DISABLE_SCHEDULER === "1") return;
+  // Serverless (Vercel) has no long-running process: Vercel Cron calls /api/cron instead.
+  if (process.env.VERCEL) return;
   const g = globalThis as { __keepstatScheduler?: boolean };
   if (g.__keepstatScheduler) return;
   g.__keepstatScheduler = true;

@@ -13,7 +13,7 @@ type Ctx = { params: Promise<{ siteId: string }> };
  */
 export const POST = handle(async (req: Request, ctx: Ctx) => {
   const user = await apiUser();
-  const site = getSite(user.id, int((await ctx.params).siteId));
+  const site = await getSite(user.id, int((await ctx.params).siteId));
   const { text, filename = "upload", confirm } = await body<{ text?: string; filename?: string; confirm?: boolean }>(req);
   if (typeof text !== "string") throw new HttpError(400, "No file contents received.");
   if (Buffer.byteLength(text) > MAX_IMPORT_BYTES) throw new HttpError(413, "File is larger than 5 MB.");
@@ -30,9 +30,9 @@ export const POST = handle(async (req: Request, ctx: Ctx) => {
   const days = parsed.rows.filter((r) => r.granularity === "day");
   const months = parsed.rows.filter((r) => r.granularity === "month");
   const origin = `import:${parsed.format}`;
-  if (days.length) upsertMetrics(site.id, "day", days, origin);
-  if (months.length) upsertMetrics(site.id, "month", months, origin);
-  recordSnapshot({
+  if (days.length) await upsertMetrics(site.id, "day", days, origin);
+  if (months.length) await upsertMetrics(site.id, "month", months, origin);
+  await recordSnapshot({
     siteId: site.id,
     kind: parsed.format,
     label: filename.slice(0, 120),

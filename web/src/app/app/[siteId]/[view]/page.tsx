@@ -12,23 +12,30 @@ export default async function SitePage({ params }: { params: Promise<{ siteId: s
   if (!(VIEWS as readonly string[]).includes(view)) notFound();
   let site;
   try {
-    site = getSite(user.id, Number(siteId));
+    site = await getSite(user.id, Number(siteId));
   } catch (e) {
     if (e instanceof HttpError) notFound();
     throw e;
   }
-  // node:sqlite rows have a null prototype; React only serializes plain objects to the client.
+  // Turn Dates and driver row objects into plain JSON before handing them to the client component.
   const plain = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
+  const [sites, daily, monthly, sources, snapshots] = await Promise.all([
+    listSites(user.id),
+    dailyMetrics(site.id),
+    monthlyMetrics(site.id),
+    listSources(site.id),
+    listSnapshots(site.id),
+  ]);
   return (
     <Dashboard
       view={view as View}
       user={{ email: user.email }}
       site={plain(site)}
-      sites={plain(listSites(user.id))}
-      daily={plain(dailyMetrics(site.id))}
-      monthly={plain(monthlyMetrics(site.id))}
-      sources={plain(listSources(site.id))}
-      snapshots={plain(listSnapshots(site.id))}
+      sites={plain(sites)}
+      daily={plain(daily)}
+      monthly={plain(monthly)}
+      sources={plain(sources)}
+      snapshots={plain(snapshots)}
     />
   );
 }
