@@ -79,7 +79,7 @@ export function NewSiteForm({ first = false, onDone }: { first?: boolean; onDone
       <div className="auth-card">
         <div className="brand">
           <LogoMark className="" />
-          <span className="wordmark">keep<span className="wm-accent">stat</span></span>
+          <span className="wordmark">Keep<span className="wm-accent">Stat</span></span>
         </div>
         <h1>Add your first site</h1>
         <p className="lead">Next you&apos;ll connect Vercel or drop in an export — KeepStat keeps every day from then on.</p>

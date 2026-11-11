@@ -159,7 +159,7 @@ export function Dashboard(props: DashProps) {
         <aside className="side">
           <Link href="/" className="side-brand">
             <LogoMark />
-            <span className="wordmark">keep<span className="wm-accent">stat</span></span>
+            <span className="wordmark">Keep<span className="wm-accent">Stat</span></span>
           </Link>
 
           <div className="site-wrap">
