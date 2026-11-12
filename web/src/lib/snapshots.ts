@@ -1,7 +1,7 @@
 import { q, q1 } from "./db";
 import { decrypt } from "./secret";
 import { recordSnapshot, upsertMetrics } from "./data";
-import { fetchDaily, VercelConfig, VercelError } from "./vercel";
+import { fetchRecentDays, VercelConfig, VercelError } from "./vercel";
 
 const day = (offset: number) => new Date(Date.now() + offset * 864e5).toISOString().slice(0, 10);
 
@@ -26,14 +26,16 @@ export async function runSource(sourceId: number): Promise<{ ok: boolean; rows: 
 
   const cfg = await decrypt<VercelConfig>(src.config_enc);
   const until = day(0);
-  // Reporting window depends on the Vercel plan; try the longest first.
+  // How far back Vercel lets us read depends on the plan (Hobby: latest 31 days).
+  // Ask for a lot; fetchRecentDays shrinks the range to whatever Vercel says is allowed.
   const windows = src.last_success_at ? [35] : [730, 365, 90, 30];
   let lastErr: unknown = null;
 
   for (const w of windows) {
-    const since = day(-w);
+    let since = day(-w);
     try {
-      const { points, raw } = await fetchDaily(cfg, since, until);
+      const { points, raw, days } = await fetchRecentDays(cfg, w);
+      since = day(-days);
       const rows = points.map((p) => ({ date: p.date, visitors: p.visitors, pageviews: p.pageviews, bounce_rate: null }));
       if (rows.length) await upsertMetrics(src.site_id, "day", rows, `vercel:${src.id}`);
       await recordSnapshot({

@@ -62,6 +62,7 @@ password reset, email.
 
 ```bash
 node scripts/test-postgres-driver.mjs   # production Postgres driver path, against an in-memory Postgres
+node scripts/test-vercel-plan-limit.mjs # fetches shrink to the Vercel plan's allowed range (Hobby: 31 days)
 ```
 
 ## Layout

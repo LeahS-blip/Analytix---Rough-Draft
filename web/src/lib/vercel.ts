@@ -16,8 +16,10 @@ export type VercelConfig = {
 export type VercelProject = { projectId: string; name: string; teamId: string | null; teamName: string };
 
 export class VercelError extends Error {
-  constructor(public status: number, message: string) {
+  status: number;
+  constructor(status: number, message: string) {
     super(message);
+    this.status = status;
   }
 }
 
@@ -92,4 +94,34 @@ export async function fetchDaily(cfg: VercelConfig, since: string, until: string
       pageviews: Number(r.pageviews ?? 0),
     }));
   return { points, raw: body };
+}
+
+const isoDay = (offset: number) => new Date(Date.now() + offset * 864e5).toISOString().slice(0, 10);
+
+/**
+ * The plan limit Vercel reports when a range reaches too far back, e.g.
+ * "Invalid request: the hobby plan only grants access to the latest 31 days of data." → 31
+ */
+export function planLimitDays(e: unknown): number | null {
+  if (!(e instanceof VercelError)) return null;
+  const m = /latest\s+(\d+)\s+days/i.exec(e.message);
+  return m ? Number(m[1]) : null;
+}
+
+/**
+ * Daily data for the last `days` days, ending today. If the range is longer
+ * than the project's plan allows, retry once with the range Vercel says it allows.
+ */
+export async function fetchRecentDays(
+  cfg: VercelConfig,
+  days: number
+): Promise<{ points: DailyPoint[]; raw: unknown; days: number }> {
+  try {
+    return { ...(await fetchDaily(cfg, isoDay(-days), isoDay(0))), days };
+  } catch (e) {
+    const limit = planLimitDays(e);
+    if (limit == null || limit - 1 >= days) throw e;
+    const allowed = Math.max(1, limit - 1); // "latest 31 days" = today and the 30 before it
+    return { ...(await fetchDaily(cfg, isoDay(-allowed), isoDay(0))), days: allowed };
+  }
 }

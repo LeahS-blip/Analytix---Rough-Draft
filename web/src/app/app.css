@@ -131,3 +131,7 @@ th+th,td+td{padding-left:16px}
 .src-chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
 .chart-empty{display:grid;place-items:center;height:220px;color:var(--faint);font-size:13.5px;border:1px dashed var(--line-strong);border-radius:3px;margin-top:10px}
+
+/* error toasts: red mark, stay up longer */
+.toast.error svg{color:var(--crit)}
+.toast.error{border-left:3px solid var(--crit)}

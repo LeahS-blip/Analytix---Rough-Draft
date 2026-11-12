@@ -28,7 +28,7 @@ export function SnapshotsView({ site, daily, snapshots, sources }: DashProps) {
       else ok++;
     }
     setBusy(false);
-    toast(errs.length ? `Snapshot failed — ${errs[0]}` : `Snapshot captured from ${ok} source${ok === 1 ? "" : "s"}`);
+    toast(errs.length ? `Snapshot failed: ${errs[0]}` : `Snapshot captured from ${ok} source${ok === 1 ? "" : "s"}`, errs.length ? "error" : "ok");
     refresh();
   }
 
@@ -268,12 +268,12 @@ export function SourcesView({ sources }: DashProps) {
     setBusyId(id);
     const r = await postJson<{ rows: number }>(`/api/sources/${id}/run`);
     setBusyId(null);
-    toast("error" in r ? `Snapshot failed — ${r.error}` : `Snapshot stored · ${r.rows} days updated`);
+    toast("error" in r ? `Snapshot failed: ${r.error}` : `Snapshot stored · ${r.rows} days updated`, "error" in r ? "error" : "ok");
     refresh();
   }
   async function toggle(id: number, active: boolean) {
     const r = await api(`/api/sources/${id}`, "PATCH", { active });
-    toast("error" in r ? r.error : active ? "Daily snapshots resumed" : "Daily snapshots paused");
+    toast("error" in r ? r.error : active ? "Daily snapshots resumed" : "Daily snapshots paused", "error" in r ? "error" : "ok");
     refresh();
   }
   function remove(id: number, label: string) {
@@ -286,7 +286,7 @@ export function SourcesView({ sources }: DashProps) {
             onClick={async () => {
               const r = await api(`/api/sources/${id}`, "DELETE");
               closeModal();
-              toast("error" in r ? r.error : "Source disconnected");
+              toast("error" in r ? r.error : "Source disconnected", "error" in r ? "error" : "ok");
               refresh();
             }}
           >
@@ -399,7 +399,7 @@ export function AddSourceModal({ siteId }: { siteId: number }) {
     setBusy(false);
     if ("error" in r) return setError(r.error);
     closeModal();
-    toast(r.first.ok ? `Vercel connected · backfilled ${r.first.rows} days` : `Connected, but the first fetch failed: ${r.first.error}`);
+    toast(r.first.ok ? `Vercel connected · backfilled ${r.first.rows} days` : `Connected, but the first fetch failed: ${r.first.error}`, r.first.ok ? "ok" : "error");
     refresh();
     router.push(`/app/${siteId}/sources`);
   }
@@ -482,7 +482,7 @@ export function SettingsView({ site }: DashProps) {
 
   async function save() {
     const r = await api(`/api/sites/${site.id}`, "PATCH", { name, timezone: tz, auto_snapshot: snap });
-    toast("error" in r ? r.error : "Settings saved");
+    toast("error" in r ? r.error : "Settings saved", "error" in r ? "error" : "ok");
     refresh();
   }
   function confirmDelete() {
@@ -495,7 +495,7 @@ export function SettingsView({ site }: DashProps) {
             onClick={async () => {
               const r = await api(`/api/sites/${site.id}`, "DELETE");
               closeModal();
-              if ("error" in r) return toast(r.error);
+              if ("error" in r) return toast(r.error, "error");
               router.push("/app");
               router.refresh();
             }}

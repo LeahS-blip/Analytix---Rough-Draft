@@ -26,7 +26,7 @@ export type DashProps = {
 /* ---------------- shared UI context ---------------- */
 
 type Ui = {
-  toast: (msg: string) => void;
+  toast: (msg: string, tone?: "ok" | "error") => void;
   openModal: (node: React.ReactNode) => void;
   closeModal: () => void;
   refresh: () => void;
@@ -88,7 +88,7 @@ function isDark() {
 export function Dashboard(props: DashProps) {
   const { view, site, sites, user, sources } = props;
   const router = useRouter();
-  const [toasts, setToasts] = useState<{ id: number; msg: string }[]>([]);
+  const [toasts, setToasts] = useState<{ id: number; msg: string; tone: "ok" | "error" }[]>([]);
   const [modal, setModal] = useState<React.ReactNode>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [range, setRange] = useState<Range>("all");
@@ -110,10 +110,11 @@ export function Dashboard(props: DashProps) {
     }
   };
 
-  const toast = useCallback((msg: string) => {
+  const toast = useCallback((msg: string, tone: "ok" | "error" = "ok") => {
     const id = Date.now() + Math.random();
-    setToasts((t) => [...t, { id, msg }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 2800);
+    setToasts((t) => [...t, { id, msg, tone }]);
+    // errors stay up longer so there is time to read them
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), tone === "error" ? 7000 : 2800);
   }, []);
   const closeModal = useCallback(() => setModal(null), []);
   const ui: Ui = {
@@ -284,8 +285,12 @@ export function Dashboard(props: DashProps) {
       )}
       <div id="toast">
         {toasts.map((t) => (
-          <div className="toast" key={t.id}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+          <div className={`toast${t.tone === "error" ? " error" : ""}`} key={t.id} role={t.tone === "error" ? "alert" : "status"}>
+            {t.tone === "error" ? (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 8v5M12 16.5v.5" /><circle cx="12" cy="12" r="9" /></svg>
+            ) : (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
+            )}
             <span>{t.msg}</span>
           </div>
         ))}
