@@ -35,7 +35,7 @@ export function SnapshotsView({ site, daily, snapshots, sources }: DashProps) {
   return (
     <>
       <p className="view-intro">
-        KeepStat saves a dated snapshot of your numbers every day, so your history survives even when your provider forgets it.
+        KeepStat saves a dated snapshot of your numbers every day, so your history stays even after your provider stops showing it.
         Every import is logged here too, with the original file kept as the receipt.
       </p>
       <div className="card">
@@ -339,7 +339,7 @@ export function SourcesView({ sources }: DashProps) {
             </div>
             <div>
               <h4>No live source yet</h4>
-              <p>Connect Vercel and KeepStat backfills everything it still remembers, then saves a snapshot every day — before the 30-day window erases it.</p>
+              <p>Connect Vercel and KeepStat backfills whatever your Vercel plan still shows, then saves a snapshot every day, so nothing drops out of view.</p>
               <div className="src-chips">
                 <button className="btn primary sm" onClick={openAddSource}>Connect Vercel</button>
                 {["Google Analytics", "Cloudflare", "Plausible", "Umami"].map((n) => (

@@ -286,6 +286,8 @@
   .ways li:hover{background:var(--surface)}
 
   /* ---------- closing clock ---------- */
+  .compare{font-family:"Fragment Mono",monospace;font-size:14px;line-height:1.6;color:#2B1206;margin:-8px 0 26px;max-width:46em}
+  .compare b{font-weight:400;color:#111110;border-bottom:2px solid #111110}
   .clock{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;font-family:"Fragment Mono",monospace;font-size:14px;color:#2B1206;margin:-8px 0 26px}
   .clock b{font-weight:400;font-size:28px;letter-spacing:-.02em;color:#111110}
 
@@ -313,8 +315,8 @@
   <main>
     <div class="row two hero">
       <div class="cell">
-        <h1>Vercel deletes your stats after 30 days. <span>We don't.</span></h1>
-        <p class="sub">KeepStat saves a snapshot of your analytics every day, so last year is always there. Your visitors never touch us, only your own numbers do.</p>
+        <h1>Vercel's free plan shows 30 days of stats. <span>We keep every day.</span></h1>
+        <p class="sub">KeepStat saves a snapshot of your analytics every day, so last year is still there, whatever plan you're on. Your visitors never touch us, only your own numbers do.</p>
         <div class="act">
           <a href="#pricing" class="btn">Start free with one site</a>
           <span class="note">no card needed</span>
@@ -327,7 +329,7 @@
             <div class="metric-big tnum">184,392</div>
             <div class="metric-sub">14 months kept · <span class="up">▲ 37%</span> since March</div>
           </div>
-          <div class="forget">Vercel keeps<b>30 days</b></div>
+          <div class="forget">Vercel free plan shows<b>30 days</b></div>
         </div>
         <div class="rangebar" role="group" aria-label="Time range">
           <button data-range="3" aria-pressed="false">3M</button>
@@ -335,11 +337,11 @@
           <button data-range="14" aria-pressed="true">14M</button>
         </div>
         <div class="chart-wrap">
-          <svg id="heroChart" viewBox="0 0 720 320" width="100%" role="img" aria-label="Line chart of monthly visitors over 14 months. Everything older than the last 30 days is data your analytics provider no longer keeps. KeepStat keeps the full line."></svg>
+          <svg id="heroChart" viewBox="0 0 720 320" width="100%" role="img" aria-label="Line chart of monthly visitors over 14 months. Everything older than the last 30 days is outside Vercel's free-plan window. KeepStat keeps the full line."></svg>
         </div>
         <div class="chart-legend">
           <span><i class="swatch kept"></i> kept by KeepStat</span>
-          <span><i class="swatch forgot"></i> forgotten by Vercel</span>
+          <span><i class="swatch forgot"></i> outside Vercel's free-plan window</span>
         </div>
       </div>
     </div>
@@ -347,16 +349,16 @@
 
     <div class="row strip" id="forgetting">
       <div class="cell">
-        <div class="lane v"><span class="who">Vercel</span><div class="days" id="laneV" aria-hidden="true"></div><span class="tally"><b id="goneN">0</b> days deleted</span></div>
+        <div class="lane v"><span class="who">Vercel free</span><div class="days" id="laneV" aria-hidden="true"></div><span class="tally"><b id="goneN">0</b> days out of view</span></div>
         <div class="lane k"><span class="who">KeepStat</span><div class="days" id="laneK" aria-hidden="true"></div><span class="tally"><b id="keptN">0</b> days kept</span></div>
-        <p class="strip-note">Each square is a day. Vercel only shows the <b>last 30</b>, so every new day pushes an old one off the edge. KeepStat keeps all of them.</p>
+        <p class="strip-note">Each square is a day. Vercel's free plan shows the <b>last 30</b>, so every new day pushes an older one out of view. Paid plans show up to 12 or 24 months. KeepStat keeps every day from the moment you connect, on any plan.</p>
       </div>
     </div>
 
     <div class="row split" id="problem">
       <div class="cell">
         <h2>Your backup spreadsheet won't save you.</h2>
-        <p class="lead">Vercel's free plan keeps a rolling 30 days. Every day the oldest one drops off. So you copy numbers into a Google Sheet you dread opening, and it falls apart.</p>
+        <p class="lead">Vercel's free plan shows a rolling 30 days, and only that window is guaranteed to be kept. Every day the oldest one drops out of view. So you copy numbers into a Google Sheet you dread opening, and it falls apart.</p>
       </div>
       <div class="cell">
         <div class="sheet" aria-label="A messy spreadsheet with inconsistent columns">
@@ -434,8 +436,8 @@
         <div class="snap-count"><span class="n tnum">184,392</span><span class="t">data points kept since 4 January 2026</span></div>
       </div>
       <div class="cell">
-        <h2>Every day, saved. Even after Vercel forgets.</h2>
-        <p class="lead">KeepStat saves a dated snapshot daily. If your provider wipes the past, your copy doesn't change.</p>
+        <h2>Every day, saved. Long after the window closes.</h2>
+        <p class="lead">KeepStat saves a dated snapshot daily. Whatever your provider stops showing, your copy doesn't change.</p>
         <ul class="points">
           <li><b>Real trends.</b> 6-month, 1-year and 3-year views, plus this month against the same month last year.</li>
           <li><b>Search your past.</b> Jump to any week and pull the exact numbers.</li>
@@ -475,14 +477,14 @@
     <div class="end">
       <h2>Every day you wait is one you lose.</h2>
       <p>Your first site is free forever, and connecting it takes about two minutes.</p>
-      <p class="clock">Another day leaves Vercel's window in <b id="dropClock">--:--:--</b></p>
+      <p class="compare">Vercel's longest window, on Pro with the Web Analytics Plus add-on: <b>24 months</b>. KeepStat: <b>every day since you connected</b>.</p>
       <a href="#" class="btn">Start free, no card needed</a>
     </div>
   </main>
 
   <footer>
     <span>KeepStat · never lose a day of your data again</span>
-    <span>design draft</span>
+    <span>KeepStat isn't affiliated with or endorsed by Vercel. Vercel is a trademark of Vercel Inc.</span>
   </footer>
 </div>
 </div>

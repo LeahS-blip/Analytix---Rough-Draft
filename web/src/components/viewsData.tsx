@@ -89,7 +89,7 @@ export function OverviewView({ site, daily, monthly, sources, range }: DashProps
             <h3>Visitors — full history kept</h3>
             <div className="sub">
               {series.granularity === "day" ? "Daily visitors, last 30 days" : `Monthly totals (${RANGE_TEXT[range]})`}
-              {sources.length ? " · your provider only keeps a rolling window" : ""}
+              {sources.length ? " · your provider only shows a rolling window" : ""}
             </div>
           </div>
           <div style={{ display: "flex", gap: 18, alignItems: "center", flexWrap: "wrap" }}>

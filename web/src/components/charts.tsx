@@ -124,7 +124,7 @@ export function LineChart({
       {edgeAt != null && edgeAt > 0 && edgeAt < n - 1 && (
         <g>
           <line x1={x(edgeAt)} y1={padT - 8} x2={x(edgeAt)} y2={padT + ih} stroke="var(--accent-deep)" strokeWidth={1.2} strokeDasharray="4 4" opacity={0.55} />
-          <text x={x(edgeAt) - 6} y={padT - 1} textAnchor="end" className="ax edge">provider&apos;s 30-day edge</text>
+          <text x={x(edgeAt) - 6} y={padT - 1} textAnchor="end" className="ax edge">30-day mark</text>
         </g>
       )}
       <path d={line} className="chart-line" fill="none" stroke="var(--accent)" strokeWidth={2.75} strokeLinecap="round" strokeLinejoin="round" />
