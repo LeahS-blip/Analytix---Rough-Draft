@@ -236,7 +236,7 @@
 
   /* ---------- the forgetting strip ---------- */
   .strip .cell{padding-top:30px;padding-bottom:30px}
-  .lane{display:grid;grid-template-columns:96px minmax(0,1fr) 150px;gap:16px;align-items:center}
+  .lane{display:grid;grid-template-columns:150px minmax(0,1fr) 150px;gap:16px;align-items:center}
   .lane + .lane{margin-top:12px}
   .who{font-family:"Exo 2",sans-serif;font-style:italic;font-weight:800;font-size:17px}
   .tally{font-family:"Fragment Mono",monospace;font-size:13px;color:var(--muted);text-align:right;white-space:nowrap}
@@ -254,8 +254,8 @@
   .strip-note{margin:16px 0 0;font-size:15px;color:var(--muted)}
   .strip-note b{color:var(--ink);font-weight:600}
   @media(max-width:700px){
-    .lane{grid-template-columns:72px minmax(0,1fr);gap:6px 12px}
-    .lane .tally{grid-column:2;text-align:left}
+    .lane{grid-template-columns:minmax(0,1fr);gap:6px}
+    .lane .tally{text-align:left}
     .days{height:22px;gap:2px}
   }
 
@@ -278,7 +278,9 @@
   .ways li:hover{background:var(--surface)}
 
   /* ---------- closing clock ---------- */
-  .compare{font-family:"Fragment Mono",monospace;font-size:14px;line-height:1.6;color:#2B1206;margin:-8px 0 26px;max-width:46em}
+  .compare{font-family:"Fragment Mono",monospace;font-size:14px;line-height:1.6;color:#2B1206;margin:-8px 0 14px;max-width:46em}
+  .compare + .compare{margin-top:0}
+  .compare:last-of-type{margin-bottom:26px}
   .compare b{font-weight:400;color:#111110;border-bottom:2px solid #111110}
   .clock{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;font-family:"Fragment Mono",monospace;font-size:14px;color:#2B1206;margin:-8px 0 26px}
   .clock b{font-weight:400;font-size:28px;letter-spacing:-.02em;color:#111110}
@@ -308,7 +310,7 @@
   <main>
     <div class="row two hero">
       <div class="cell">
-        <h1>Vercel's free plan shows 30 days of stats. <span>We keep every day.</span></h1>
+        <h1>Vercel's free plan shows 30 days of stats. <span>We keep all of them.</span></h1>
         <p class="sub">KeepStat saves a snapshot of your analytics every day, so last year is still there, whatever plan you're on. Your visitors never touch us, only your own numbers do.</p>
         <div class="act">
           <a href="#pricing" class="btn">Start free with one site</a>
@@ -342,7 +344,7 @@
 
     <div class="row strip" id="forgetting">
       <div class="cell">
-        <div class="lane v"><span class="who">Vercel free</span><div class="days" id="laneV" aria-hidden="true"></div><span class="tally"><b id="goneN">0</b> days out of view</span></div>
+        <div class="lane v"><span class="who">Vercel free plan</span><div class="days" id="laneV" aria-hidden="true"></div><span class="tally"><b id="goneN">0</b> days out of view</span></div>
         <div class="lane k"><span class="who">KeepStat</span><div class="days" id="laneK" aria-hidden="true"></div><span class="tally"><b id="keptN">0</b> days kept</span></div>
         <p class="strip-note">Each square is a day. Vercel's free plan shows the <b>last 30</b>, so every new day pushes an older one out of view. Paid plans show up to 12 or 24 months. KeepStat keeps every day from the moment you connect, on any plan.</p>
       </div>
@@ -470,7 +472,8 @@
     <div class="end">
       <h2>Every day you wait is one you lose.</h2>
       <p>Your first site is free forever, and connecting it takes about two minutes.</p>
-      <p class="compare">Vercel's longest window, on Pro with the Web Analytics Plus add-on: <b>24 months</b>. KeepStat: <b>every day since you connected</b>.</p>
+      <p class="compare">Every 24 hours, another day falls outside the free plan&#39;s window.</p>
+      <p class="compare">Paying Vercel for Pro plus the Web Analytics Plus add-on still caps you at <b>24 months</b>, and only for Vercel. KeepStat keeps everything, from every source, from <b>$0</b>.</p>
       <a href="#" class="btn">Start free, no card needed</a>
     </div>
   </main>
