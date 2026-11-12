@@ -241,6 +241,54 @@
   footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px 24px;padding:22px 36px 40px;font-family:"Fragment Mono",monospace;font-size:12.5px;color:var(--muted)}
   @media(max-width:560px){footer{padding:20px 18px 36px}}
 
+
+  /* ---------- the forgetting strip ---------- */
+  .strip .cell{padding-top:30px;padding-bottom:30px}
+  .lane{display:grid;grid-template-columns:96px minmax(0,1fr) 150px;gap:16px;align-items:center}
+  .lane + .lane{margin-top:12px}
+  .who{font-family:"Exo 2",sans-serif;font-style:italic;font-weight:800;font-size:17px}
+  .tally{font-family:"Fragment Mono",monospace;font-size:13px;color:var(--muted);text-align:right;white-space:nowrap}
+  .tally b{font-weight:400;color:var(--ink);font-size:16px}
+  .lane.k .tally b{color:var(--accent-deep)}
+  .days{display:grid;grid-template-columns:repeat(var(--n,60),minmax(0,1fr));gap:3px;height:26px}
+  .days i{display:block;height:100%;background:var(--ink);opacity:var(--o,1)}
+  .lane.k .days i{background:var(--accent)}
+  .days i.gone{background:transparent;opacity:1;border:1px dashed var(--line-strong)}
+  .days i.drop{animation:drop .9s ease-in forwards}
+  .days i.new{animation:pop .5s ease-out}
+  @keyframes drop{0%{transform:none;opacity:var(--o,1)}100%{transform:translateY(22px) rotate(18deg);opacity:0}}
+  @keyframes pop{0%{transform:scaleY(.2);opacity:0}100%{transform:none}}
+  .edge{position:relative}
+  .strip-note{margin:16px 0 0;font-size:15px;color:var(--muted)}
+  .strip-note b{color:var(--ink);font-weight:600}
+  @media(max-width:700px){
+    .lane{grid-template-columns:72px minmax(0,1fr);gap:6px 12px}
+    .lane .tally{grid-column:2;text-align:left}
+    .days{height:22px;gap:2px}
+  }
+
+  /* ---------- the spreadsheet cleans itself up ---------- */
+  .sheet .c{transition:background .35s ease,color .35s ease}
+  .sheet.clean .c.saved{background:var(--accent-wash);color:var(--ink)}
+  .sheet.clean .c.skip{color:var(--faint);text-decoration:line-through}
+  .sheet .c.flash{animation:flash .5s ease}
+  @keyframes flash{0%{background:var(--accent);color:#111110}100%{}}
+  .sheet-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:14px}
+  .sheet-actions .sheet-note{margin:0}
+  .btn.sm{font-size:14px;padding:8px 14px}
+
+  /* ---------- motion ---------- */
+  .js-reveal .rv{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease}
+  .js-reveal .rv.in{opacity:1;transform:none}
+  .plan{transition:background .2s ease}
+  .plan:hover{background:var(--surface)}
+  .ways li{transition:background .2s ease}
+  .ways li:hover{background:var(--surface)}
+
+  /* ---------- closing clock ---------- */
+  .clock{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;font-family:"Fragment Mono",monospace;font-size:14px;color:#2B1206;margin:-8px 0 26px}
+  .clock b{font-weight:400;font-size:28px;letter-spacing:-.02em;color:#111110}
+
   :focus-visible{outline:2.5px solid var(--ink);outline-offset:3px}
   .end :focus-visible{outline-color:#111110}
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -296,6 +344,15 @@
       </div>
     </div>
 
+
+    <div class="row strip" id="forgetting">
+      <div class="cell">
+        <div class="lane v"><span class="who">Vercel</span><div class="days" id="laneV" aria-hidden="true"></div><span class="tally"><b id="goneN">0</b> days deleted</span></div>
+        <div class="lane k"><span class="who">KeepStat</span><div class="days" id="laneK" aria-hidden="true"></div><span class="tally"><b id="keptN">0</b> days kept</span></div>
+        <p class="strip-note">Each square is a day. Vercel only shows the <b>last 30</b>, so every new day pushes an old one off the edge. KeepStat keeps all of them.</p>
+      </div>
+    </div>
+
     <div class="row split" id="problem">
       <div class="cell">
         <h2>Your backup spreadsheet won't save you.</h2>
@@ -309,7 +366,10 @@
           <div class="r"><div class="c">43</div><div class="c messy">(missed)</div><div class="c messy"> </div><div class="c messy"> </div></div>
           <div class="r"><div class="c">44</div><div class="c">8/26</div><div class="c">17900</div><div class="c messy">diff format</div></div>
         </div>
-        <p class="sheet-note">Three date formats, a "k", and a month nobody filled in.</p>
+        <div class="sheet-actions">
+          <button type="button" class="btn btn-line sm" id="fixSheet" aria-pressed="false">Clean it up</button>
+          <p class="sheet-note" id="sheetNote" aria-live="polite">Three date formats, a "k", and a month nobody filled in.</p>
+        </div>
       </div>
     </div>
 
@@ -415,6 +475,7 @@
     <div class="end">
       <h2>Every day you wait is one you lose.</h2>
       <p>Your first site is free forever, and connecting it takes about two minutes.</p>
+      <p class="clock">Another day leaves Vercel's window in <b id="dropClock">--:--:--</b></p>
       <a href="#" class="btn">Start free, no card needed</a>
     </div>
   </main>
@@ -425,6 +486,126 @@
   </footer>
 </div>
 </div>
+
+<script>
+(function(){
+  "use strict";
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var $ = function(id){ return document.getElementById(id); };
+
+  /* ---- the forgetting strip: Vercel drops its oldest day, KeepStat keeps it ---- */
+  var laneV = $("laneV"), laneK = $("laneK");
+  if (laneV && laneK) {
+    var WINDOW = 30, day = 0, timer = null;
+    var count = function(){ return window.innerWidth < 700 ? 40 : 60; };
+    // deterministic "traffic" per day so the squares look like real data
+    var traffic = function(d){ var x = Math.sin(d * 12.9898) * 43758.5453; x = x - Math.floor(x); var wk = [0.55,0.9,1,0.95,0.85,0.6,0.5][d % 7]; return Math.max(0.28, Math.min(1, wk * (0.75 + x * 0.4))); };
+    function render(animate){
+      var n = count(); laneV.style.setProperty("--n", n); laneK.style.setProperty("--n", n);
+      var v = "", k = "";
+      for (var i = 0; i < n; i++) {
+        var d = day - n + 1 + i, o = traffic(d).toFixed(2), age = n - 1 - i;
+        var cls = age >= WINDOW ? "gone" : "";
+        if (animate && age === WINDOW) cls = "drop";
+        v += '<i class="' + cls + '" style="--o:' + o + '"></i>';
+        k += '<i class="' + (animate && age === 0 ? "new" : "") + '" style="--o:' + o + '"></i>';
+      }
+      laneV.innerHTML = v; laneK.innerHTML = k;
+      $("goneN").textContent = Math.max(0, day + 1 - WINDOW).toLocaleString("en-US");
+      $("keptN").textContent = (day + 1).toLocaleString("en-US");
+    }
+    day = count() - 1; render(false);
+    function tick(){ day++; render(true); }
+    function start(){ if (!timer && !reduce) timer = setInterval(tick, 1600); }
+    function stop(){ clearInterval(timer); timer = null; }
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function(es){ es[0].isIntersecting ? start() : stop(); }).observe(laneV);
+    } else start();
+    window.addEventListener("resize", function(){ render(false); });
+  }
+
+  /* ---- the spreadsheet: run it through the same rules the importer uses ---- */
+  var fix = $("fixSheet");
+  if (fix) {
+    var sheet = fix.closest(".cell").querySelector(".sheet");
+    var rows = sheet.querySelectorAll(".r");
+    var before = [].map.call(rows, function(r){ return [].map.call(r.children, function(c){ return { t: c.textContent, cls: c.className }; }); });
+    // [#, month, visitors, status, state]
+    var after = [
+      ["#", "month", "visitors", "status", "head"],
+      ["41", "2026-06", "16,800", "saved", "saved"],
+      ["42", "jul", "15,200", "skipped: no year", "skip"],
+      ["43", "(missed)", "", "skipped: no date", "skip"],
+      ["44", "2026-08", "17,900", "saved", "saved"]
+    ];
+    var noteBefore = $("sheetNote").textContent;
+    var noteAfter = "Two months saved. The two rows it can't date are skipped, and it tells you why.";
+    fix.addEventListener("click", function(){
+      var clean = fix.getAttribute("aria-pressed") !== "true";
+      fix.setAttribute("aria-pressed", clean ? "true" : "false");
+      fix.textContent = clean ? "Show the mess" : "Clean it up";
+      sheet.classList.toggle("clean", clean);
+      [].forEach.call(rows, function(r, ri){
+        [].forEach.call(r.children, function(c, ci){
+          setTimeout(function(){
+            if (clean) {
+              var a = after[ri];
+              c.textContent = a[ci];
+              c.className = "c" + (ri && ci ? " " + (a[4] === "skip" ? "skip" : "saved") : "");
+            } else { c.textContent = before[ri][ci].t; c.className = before[ri][ci].cls; }
+            if (!reduce && ri) { c.classList.add("flash"); setTimeout(function(){ c.classList.remove("flash"); }, 500); }
+          }, reduce ? 0 : ri * 140 + ci * 40);
+        });
+      });
+      $("sheetNote").textContent = clean ? noteAfter : noteBefore;
+    });
+  }
+
+  /* ---- numbers count up when they come into view ---- */
+  function countUp(el){
+    var target = parseInt(el.textContent.replace(/\D/g, ""), 10); if (!target || reduce) return;
+    var t0 = null, dur = 1100;
+    function step(ts){ if (!t0) t0 = ts; var p = Math.min(1, (ts - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(target * e).toLocaleString("en-US"); if (p < 1) requestAnimationFrame(step); }
+    requestAnimationFrame(step);
+  }
+
+  /* ---- sections ease in as you scroll ---- */
+  if ("IntersectionObserver" in window && !reduce) {
+    document.documentElement.classList.add("js-reveal");
+    var targets = document.querySelectorAll("#site main .row, #site .ways li, #site .plan, #site .end");
+    [].forEach.call(targets, function(t){ t.classList.add("rv"); });
+    var io = new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if (!e.isIntersecting) return;
+        e.target.classList.add("in"); io.unobserve(e.target);
+        [].forEach.call(e.target.querySelectorAll(".metric-big, .snap-count .n"), countUp);
+      });
+    }, { rootMargin: "0px 0px -8% 0px" });
+    [].forEach.call(targets, function(t){ io.observe(t); });
+    // Anything you have scrolled or jumped past (e.g. via the nav links) is shown too.
+    var pending = function(){ return document.querySelectorAll(".rv:not(.in)"); };
+    var sweep = function(){ [].forEach.call(pending(), function(t){ if (t.getBoundingClientRect().top < window.innerHeight) { t.classList.add("in"); io.unobserve(t); } }); };
+    var queued = false;
+    window.addEventListener("scroll", function(){ if (!queued) { queued = true; setTimeout(function(){ queued = false; sweep(); }, 80); } }, { passive: true });
+    window.addEventListener("hashchange", sweep);
+    sweep(); // whatever is on screen at load shows straight away
+    window.addEventListener("load", sweep);
+  }
+
+  /* ---- closing clock: time until the next UTC midnight ---- */
+  var clock = $("dropClock");
+  if (clock) {
+    var pad = function(n){ return (n < 10 ? "0" : "") + n; };
+    var tickClock = function(){
+      var now = new Date(), next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+      var s = Math.max(0, Math.floor((next - now.getTime()) / 1000));
+      clock.textContent = pad(Math.floor(s / 3600)) + ":" + pad(Math.floor(s % 3600 / 60)) + ":" + pad(s % 60);
+    };
+    tickClock(); setInterval(tickClock, 1000);
+  }
+})();
+</script>
 <iframe id="appFrame" title="Analytix dashboard" hidden></iframe>
 <button id="backBtn" type="button" hidden>&#8592; Back to site</button>
 <template id="appDoc"><title>Analytix Dashboard</title>
