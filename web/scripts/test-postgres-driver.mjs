@@ -45,6 +45,14 @@ try {
   assert.ok(site.created_at instanceof Date);
   const sess = await q1("SELECT now() > now() - interval '20 hours' AS ok");
   assert.equal(sess.ok, true);
+  // 7. Schema version is recorded, so the next cold start skips the DDL; max_days exists.
+  assert.equal((await q1("SELECT value FROM app_config WHERE key = 'schema_version'")).value, "2");
+  const srcId = (await q1("INSERT INTO sources (site_id, kind, label, config_enc) VALUES ($1, 'vercel', 'v', 'x') RETURNING id", [sid])).id;
+  const learn = "UPDATE sources SET max_days = CASE WHEN $2::int < $3::int THEN $2::int ELSE max_days END WHERE id = $1";
+  await q(learn, [srcId, 30, 730]); // Vercel shrank the range: remember 30
+  assert.equal((await q1("SELECT max_days FROM sources WHERE id = $1", [srcId])).max_days, 30);
+  await q(learn, [srcId, 100, 35]); // no shrink (100 is not < 35 numerically): keep 30
+  assert.equal((await q1("SELECT max_days FROM sources WHERE id = $1", [srcId])).max_days, 30);
   console.log("app db.ts on the postgres driver: all checks passed");
   process.exit(0);
 } finally {

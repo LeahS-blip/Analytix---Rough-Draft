@@ -10,10 +10,10 @@
 <!-- Exo 2 (heavy italic) for the logo and headlines, Host Grotesk for reading, Fragment Mono for numbers. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,700;0,800;1,800;1,900&family=Fragment+Mono&family=Host+Grotesk:wght@400;500;600;700;800&display=swap">
 <script>
-  // Hold the first paint until the fonts are in (max 700ms) so text doesn't jump when they swap.
+  // Hold the first paint until the fonts are in (max 350ms) so text doesn't jump when they swap.
   (function(){
     var d=document.documentElement, done=function(){d.classList.remove('fonts-pending')};
-    setTimeout(done,700);
+    setTimeout(done,350);
     if(document.fonts&&document.fonts.ready) document.fonts.ready.then(done);
   })();
 </script>

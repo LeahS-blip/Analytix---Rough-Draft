@@ -80,14 +80,19 @@ CREATE TABLE IF NOT EXISTS app_config (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
+-- v2: remember how many days back each source is allowed to read (Vercel plan limit)
+ALTER TABLE sources ADD COLUMN IF NOT EXISTS max_days INTEGER;
 `;
+
+/** Bump when SCHEMA changes; cold starts skip the DDL when the database is already current. */
+const SCHEMA_VERSION = "2";
 
 async function connectPostgres(url: string): Promise<Db> {
   const { default: postgres } = await import("postgres");
   // prepare:false so it works through Neon's pooled (PgBouncer) connection string.
   const sql = postgres(url, {
     prepare: false,
-    max: Number(process.env.KEEPSTAT_DB_POOL || 5),
+    max: Number(process.env.KEEPSTAT_DB_POOL || 8),
     idle_timeout: 20,
     connect_timeout: 15,
   });
@@ -97,8 +102,17 @@ async function connectPostgres(url: string): Promise<Db> {
     tx: async <T,>(fn: (q: Db) => Promise<T>) =>
       (await sql.begin((t) => fn(wrap(t)))) as T,
   });
-  // .simple() runs the multi-statement schema in one round trip (the extended protocol allows one statement).
-  await sql.unsafe(SCHEMA).simple();
+  const current = await sql
+    .unsafe("SELECT value FROM app_config WHERE key = 'schema_version'")
+    .catch(() => [] as { value?: string }[]);
+  if (current[0]?.value !== SCHEMA_VERSION) {
+    // .simple() runs the multi-statement schema in one round trip (the extended protocol allows one statement).
+    await sql.unsafe(SCHEMA).simple();
+    await sql.unsafe(
+      "INSERT INTO app_config (key, value) VALUES ('schema_version', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+      [SCHEMA_VERSION]
+    );
+  }
   return wrap(sql);
 }
 

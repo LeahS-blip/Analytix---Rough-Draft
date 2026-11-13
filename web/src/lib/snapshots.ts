@@ -12,6 +12,7 @@ type SourceRecord = {
   label: string;
   config_enc: string;
   last_success_at: string | null;
+  max_days: number | null; // learned plan limit, e.g. 30 on Vercel Hobby
 };
 
 /**
@@ -27,30 +28,42 @@ export async function runSource(sourceId: number): Promise<{ ok: boolean; rows: 
   const cfg = await decrypt<VercelConfig>(src.config_enc);
   const until = day(0);
   // How far back Vercel lets us read depends on the plan (Hobby: latest 31 days).
-  // Ask for a lot; fetchRecentDays shrinks the range to whatever Vercel says is allowed.
-  const windows = src.last_success_at ? [35] : [730, 365, 90, 30];
+  // Once we've learned the limit we ask for exactly that, so each run is a single request.
+  // Before then, ask for a lot; fetchRecentDays shrinks to whatever Vercel says is allowed.
+  const limit = src.max_days ?? null;
+  const windows = src.last_success_at
+    ? [Math.min(35, limit ?? 35)]
+    : limit
+      ? [limit]
+      : [730, 365, 90, 30];
   let lastErr: unknown = null;
 
   for (const w of windows) {
-    let since = day(-w);
     try {
       const { points, raw, days } = await fetchRecentDays(cfg, w);
-      since = day(-days);
+      const since = day(-days);
       const rows = points.map((p) => ({ date: p.date, visitors: p.visitors, pageviews: p.pageviews, bounce_rate: null }));
-      if (rows.length) await upsertMetrics(src.site_id, "day", rows, `vercel:${src.id}`);
-      await recordSnapshot({
-        siteId: src.site_id,
-        sourceId: src.id,
-        kind: "vercel",
-        label: src.label,
-        status: "ok",
-        rows: rows.length,
-        rangeFrom: rows[0]?.date ?? since,
-        rangeTo: rows.at(-1)?.date ?? until,
-        visitors: rows.reduce((a, r) => a + (r.visitors ?? 0), 0),
-        raw: JSON.stringify(raw),
-      });
-      await q("UPDATE sources SET last_success_at = now(), last_error = NULL WHERE id = $1", [src.id]);
+      // These three writes don't depend on each other, so do them at once.
+      await Promise.all([
+        rows.length ? upsertMetrics(src.site_id, "day", rows, `vercel:${src.id}`) : null,
+        recordSnapshot({
+          siteId: src.site_id,
+          sourceId: src.id,
+          kind: "vercel",
+          label: src.label,
+          status: "ok",
+          rows: rows.length,
+          rangeFrom: rows[0]?.date ?? since,
+          rangeTo: rows.at(-1)?.date ?? until,
+          visitors: rows.reduce((a, r) => a + (r.visitors ?? 0), 0),
+          raw: JSON.stringify(raw),
+        }),
+        q(
+          // remember the plan limit when Vercel made us shrink the range
+          "UPDATE sources SET last_success_at = now(), last_error = NULL, max_days = CASE WHEN $2::int < $3::int THEN $2::int ELSE max_days END WHERE id = $1",
+          [src.id, days, w]
+        ),
+      ]);
       return { ok: true, rows: rows.length };
     } catch (e) {
       lastErr = e;

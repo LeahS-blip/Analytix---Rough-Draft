@@ -135,3 +135,7 @@ th+th,td+td{padding-left:16px}
 /* error toasts: red mark, stay up longer */
 .toast.error svg{color:var(--crit)}
 .toast.error{border-left:3px solid var(--crit)}
+
+/* loading skeleton */
+.sk{display:block;background:var(--surface-3);border-radius:3px;animation:skp 1.2s ease-in-out infinite}
+@keyframes skp{0%,100%{opacity:.55}50%{opacity:1}}

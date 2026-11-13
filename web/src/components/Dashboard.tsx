@@ -86,8 +86,35 @@ function isDark() {
 /* ---------------- shell ---------------- */
 
 export function Dashboard(props: DashProps) {
-  const { view, site, sites, user, sources } = props;
+  const { site, sites, user, sources } = props;
   const router = useRouter();
+  // The dashboard already holds every view's data, so switching views happens here in the
+  // browser (instant) and only the URL changes. Loading any view's URL directly still works.
+  const [view, setView] = useState<View>(props.view);
+  // Any fresh server render (navigation, router.refresh after a change) is the source of truth.
+  useEffect(() => setView(props.view), [props]);
+  const go = useCallback(
+    (v: View) => {
+      setView(v);
+      window.history.pushState(null, "", `/app/${site.id}/${v}`);
+      window.scrollTo({ top: 0 });
+    },
+    [site.id]
+  );
+  useEffect(() => {
+    const onPop = () => {
+      const v = window.location.pathname.split("/").pop() as View;
+      if (v && v in TITLES) setView(v);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+  const navTo = (v: View) => (e: React.MouseEvent) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return; // let "open in new tab" work
+    e.preventDefault();
+    go(v);
+  };
+  const vp = { ...props, view };
   const [toasts, setToasts] = useState<{ id: number; msg: string; tone: "ok" | "error" }[]>([]);
   const [modal, setModal] = useState<React.ReactNode>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -205,20 +232,20 @@ export function Dashboard(props: DashProps) {
 
           <nav className="nav">
             {(["overview", "trends", "history"] as View[]).map((v) => (
-              <Link key={v} href={`/app/${site.id}/${v}`} className={v === view ? "active" : ""}>
+              <a key={v} href={`/app/${site.id}/${v}`} onClick={navTo(v)} className={v === view ? "active" : ""} aria-current={v === view ? "page" : undefined}>
                 <Icon v={v} /> {TITLES[v]}
-              </Link>
+              </a>
             ))}
             <div className="grp">Data</div>
             {(["snapshots", "import", "sources"] as View[]).map((v) => (
-              <Link key={v} href={`/app/${site.id}/${v}`} className={v === view ? "active" : ""}>
+              <a key={v} href={`/app/${site.id}/${v}`} onClick={navTo(v)} className={v === view ? "active" : ""} aria-current={v === view ? "page" : undefined}>
                 <Icon v={v} /> {TITLES[v]}
-              </Link>
+              </a>
             ))}
             <div className="grp">Account</div>
-            <Link href={`/app/${site.id}/settings`} className={view === "settings" ? "active" : ""}>
+            <a href={`/app/${site.id}/settings`} onClick={navTo("settings")} className={view === "settings" ? "active" : ""} aria-current={view === "settings" ? "page" : undefined}>
               <Icon v="settings" /> {TITLES.settings}
-            </Link>
+            </a>
           </nav>
 
           <div className="side-foot">
@@ -263,13 +290,13 @@ export function Dashboard(props: DashProps) {
           </div>
 
           <div className="content" key={view}>
-            {view === "overview" && <OverviewView {...props} range={range} />}
-            {view === "trends" && <TrendsView {...props} range={range} />}
-            {view === "history" && <HistoryView {...props} />}
-            {view === "snapshots" && <SnapshotsView {...props} />}
-            {view === "import" && <ImportView {...props} />}
-            {view === "sources" && <SourcesView {...props} />}
-            {view === "settings" && <SettingsView {...props} />}
+            {view === "overview" && <OverviewView {...vp} range={range} />}
+            {view === "trends" && <TrendsView {...vp} range={range} />}
+            {view === "history" && <HistoryView {...vp} />}
+            {view === "snapshots" && <SnapshotsView {...vp} />}
+            {view === "import" && <ImportView {...vp} />}
+            {view === "sources" && <SourcesView {...vp} />}
+            {view === "settings" && <SettingsView {...vp} />}
             <div className="foot-note">
               KeepStat · {sources.length ? `${sources.filter((s) => s.active).length} live source${sources.filter((s) => s.active).length === 1 ? "" : "s"} · ` : ""}
               your data stays in this app&apos;s database
