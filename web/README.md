@@ -63,6 +63,9 @@ password reset, email.
 ```bash
 node scripts/test-postgres-driver.mjs   # production Postgres driver path, against an in-memory Postgres
 node scripts/test-vercel-plan-limit.mjs # fetches shrink to the Vercel plan's allowed range (Hobby: 31 days)
+node scripts/mock-vercel.mjs            # local stand-in for Vercel's API (Hobby-shaped data with a spike);
+                                        # set KEEPSTAT_VERCEL_API=http://127.0.0.1:5099 in .env.local and
+                                        # connect with the token "local-test-token" to try the full flow
 ```
 
 ## Layout

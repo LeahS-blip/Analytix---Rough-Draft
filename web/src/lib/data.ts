@@ -28,6 +28,7 @@ export type SourceRow = {
   last_success_at: string | null;
   last_error: string | null;
   created_at: string;
+  max_days?: number | null; // how many days the provider lets us read (Vercel Hobby: 30)
 };
 
 export type SnapshotRow = {
@@ -165,7 +166,7 @@ export function daysInMonth(month: string): number {
 
 export async function listSources(siteId: number): Promise<SourceRow[]> {
   return q(
-    "SELECT id, site_id, kind, label, active, last_success_at, last_error, created_at FROM sources WHERE site_id = $1 ORDER BY id",
+    "SELECT id, site_id, kind, label, active, last_success_at, last_error, created_at, max_days FROM sources WHERE site_id = $1 ORDER BY id",
     [siteId]
   );
 }
@@ -217,4 +218,63 @@ export async function recordSnapshot(p: {
       p.raw ?? null,
     ]
   );
+}
+
+/* ---------------- breakdowns (pages, referrers, countries, devices) ---------------- */
+
+export type BreakdownItem = { key: string; visitors: number; pageviews: number };
+export type BreakdownSummary = {
+  from: string | null; // first day with details
+  to: string | null;
+  dims: Record<string, { all: BreakdownItem[]; recent: BreakdownItem[]; prior: BreakdownItem[] }>;
+  /** per day: the referrer that sent the most visitors (ignores direct traffic), with its share of the day */
+  topReferrerByDay: Record<string, { key: string; share: number }>;
+};
+
+const isoDaysAgo = (n: number) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
+
+export async function breakdownSummary(siteId: number): Promise<BreakdownSummary> {
+  const recentFrom = isoDaysAgo(30);
+  const priorFrom = isoDaysAgo(60);
+  const [rows, refs, span] = await Promise.all([
+    q<{ dimension: string; key: string; v_all: number; pv_all: number; v_recent: number | null; pv_recent: number | null; v_prior: number | null; pv_prior: number | null }>(
+      `SELECT dimension, key,
+              SUM(visitors)::int AS v_all, SUM(pageviews)::int AS pv_all,
+              (SUM(visitors) FILTER (WHERE date_from >= $2))::int AS v_recent,
+              (SUM(pageviews) FILTER (WHERE date_from >= $2))::int AS pv_recent,
+              (SUM(visitors) FILTER (WHERE date_from >= $3 AND date_to < $2))::int AS v_prior,
+              (SUM(pageviews) FILTER (WHERE date_from >= $3 AND date_to < $2))::int AS pv_prior
+       FROM breakdowns WHERE site_id = $1 GROUP BY 1, 2`,
+      [siteId, recentFrom, priorFrom]
+    ),
+    q<{ day: string; key: string; visitors: number; total: number }>(
+      `SELECT DISTINCT ON (day) day, key, visitors, total FROM (
+         SELECT date_from AS day, key, visitors,
+                SUM(visitors) OVER (PARTITION BY date_from)::int AS total
+         FROM breakdowns
+         WHERE site_id = $1 AND dimension IN ('referrerHostname', 'spikeReferrer') AND date_from = date_to
+       ) t
+       WHERE key NOT IN ('(direct)', 'Others')
+       ORDER BY day, visitors DESC`,
+      [siteId]
+    ),
+    q1<{ from: string | null; to: string | null }>(
+      `SELECT MIN(date_from) AS "from", MAX(date_to) AS "to" FROM breakdowns WHERE site_id = $1`,
+      [siteId]
+    ),
+  ]);
+
+  const dims: BreakdownSummary["dims"] = {};
+  const top = (items: BreakdownItem[]) => items.filter((i) => i.visitors > 0 || i.pageviews > 0).sort((a, b) => b.pageviews - a.pageviews || b.visitors - a.visitors).slice(0, 12);
+  for (const d of new Set(rows.map((r) => r.dimension))) {
+    const rs = rows.filter((r) => r.dimension === d);
+    dims[d] = {
+      all: top(rs.map((r) => ({ key: r.key, visitors: r.v_all ?? 0, pageviews: r.pv_all ?? 0 }))),
+      recent: top(rs.map((r) => ({ key: r.key, visitors: r.v_recent ?? 0, pageviews: r.pv_recent ?? 0 }))),
+      prior: rs.map((r) => ({ key: r.key, visitors: r.v_prior ?? 0, pageviews: r.pv_prior ?? 0 })).filter((i) => i.pageviews > 0),
+    };
+  }
+  const topReferrerByDay: BreakdownSummary["topReferrerByDay"] = {};
+  for (const r of refs) if (r.total > 0) topReferrerByDay[r.day] = { key: r.key, share: r.visitors / r.total };
+  return { from: span?.from ?? null, to: span?.to ?? null, dims, topReferrerByDay };
 }

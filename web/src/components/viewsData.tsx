@@ -6,7 +6,7 @@ import type { DashProps } from "./Dashboard";
 import { useUi } from "./Dashboard";
 import { CoverageGrid, LineChart, Sparkline } from "./charts";
 import { fmt, monthFull, monthLabel } from "./client";
-import { buildSeries, kpis, shiftMonth, type Range } from "./stats";
+import { buildSeries, insights, kpis, shiftMonth, type Insight, type Range } from "./stats";
 
 const RANGE_TEXT: Record<Range, string> = { "30d": "last 30 days", "6m": "last 6 months", "1y": "last 12 months", all: "all time" };
 
@@ -37,11 +37,12 @@ function YoyToggle({ on, set }: { on: boolean; set: (v: boolean) => void }) {
 
 /* ---------------- overview ---------------- */
 
-export function OverviewView({ site, daily, monthly, sources, range }: DashProps & { range: Range }) {
+export function OverviewView({ site, daily, monthly, sources, breakdown, range }: DashProps & { range: Range }) {
   const [yoy, setYoy] = useState(false);
   const series = useMemo(() => buildSeries(range, daily, monthly), [range, daily, monthly]);
   const { kpis: tiles, basis } = useMemo(() => kpis(daily, monthly), [daily, monthly]);
   const coverage = useMemo(() => new Map(daily.map((d) => [d.date, d.visitors])), [daily]);
+  const found = useMemo(() => insights(daily, sources, breakdown), [daily, sources, breakdown]);
 
   if (!monthly.length) return <EmptyState siteId={site.id} />;
 
@@ -144,6 +145,20 @@ export function OverviewView({ site, daily, monthly, sources, range }: DashProps
         <div className="card">
           <div className="card-head">
             <div>
+              <h3>What your history says</h3>
+              <div className="sub">Worked out from every day you&apos;ve kept · KPIs above use the {basis}</div>
+            </div>
+          </div>
+          {found.length ? <InsightList items={found} /> : <Highlights monthly={monthly} />}
+          {found.length < 3 && (
+            <p className="muted small" style={{ marginTop: 12 }}>
+              More appear as your history grows: weekday patterns after three weeks, month-on-month pace once last month is kept.
+            </p>
+          )}
+        </div>
+        <div className="card">
+          <div className="card-head">
+            <div>
               <h3>Snapshot coverage</h3>
               <div className="sub">Each square is a day · last {covWeeks} weeks</div>
             </div>
@@ -164,16 +179,9 @@ export function OverviewView({ site, daily, monthly, sources, range }: DashProps
             </div>
           </div>
         </div>
-        <div className="card">
-          <div className="card-head">
-            <div>
-              <h3>At a glance</h3>
-              <div className="sub">Computed from everything you&apos;ve kept · KPIs above use the {basis}</div>
-            </div>
-          </div>
-          <Highlights monthly={monthly} />
-        </div>
       </div>
+
+      <BreakdownCard breakdown={breakdown} />
     </>
   );
 }
@@ -330,5 +338,117 @@ export function HistoryView({ site, monthly, daily }: DashProps) {
         </div>
       </div>
     </>
+  );
+}
+
+/* ---------------- insights + breakdowns ---------------- */
+
+const INSIGHT_TAG: Record<Insight["kind"], string> = {
+  kept: "kept",
+  spike: "spike",
+  momentum: "this week",
+  pace: "this month",
+  weekday: "pattern",
+  record: "record",
+  rising: "pages",
+  source: "referrers",
+};
+
+function InsightList({ items }: { items: Insight[] }) {
+  return (
+    <ul className="insights">
+      {items.slice(0, 7).map((i) => (
+        <li key={i.title} className={`ins ins-${i.kind}`}>
+          <span className="ins-tag">{INSIGHT_TAG[i.kind]}</span>
+          <div>
+            <div className="ins-t">{i.title}</div>
+            <div className="ins-d">{i.detail}</div>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+const DIM_INFO: { key: string; title: string; metric: "pageviews" | "visitors"; unit: string }[] = [
+  { key: "requestPath", title: "Top pages", metric: "pageviews", unit: "views" },
+  { key: "referrerHostname", title: "Referrers", metric: "visitors", unit: "visitors" },
+  { key: "country", title: "Countries", metric: "visitors", unit: "visitors" },
+  { key: "deviceType", title: "Devices", metric: "visitors", unit: "visitors" },
+];
+
+let regionNames: Intl.DisplayNames | null = null;
+function prettyKey(dim: string, key: string) {
+  if (key === "Others") return "Everything else";
+  if (dim === "country" && /^[A-Z]{2}$/.test(key)) {
+    try {
+      regionNames ??= new Intl.DisplayNames(["en"], { type: "region" });
+      return regionNames.of(key) ?? key;
+    } catch {
+      return key;
+    }
+  }
+  if (dim === "deviceType") return key.charAt(0).toUpperCase() + key.slice(1);
+  return key;
+}
+
+function BreakdownCard({ breakdown }: { breakdown: DashProps["breakdown"] }) {
+  const [scope, setScope] = useState<"recent" | "all">("recent");
+  const has = !!breakdown.from;
+  return (
+    <div className="card">
+      <div className="card-head">
+        <div>
+          <h3>Where your visitors came from</h3>
+          <div className="sub">
+            {has
+              ? `Kept since ${new Date(breakdown.from + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })} · Vercel only shows its own window`
+              : "Top pages, referrers, countries and devices"}
+          </div>
+        </div>
+        {has && (
+          <div className="ranges" role="group" aria-label="Breakdown period">
+            <button aria-pressed={scope === "recent"} onClick={() => setScope("recent")}>Last 30 days</button>
+            <button aria-pressed={scope === "all"} onClick={() => setScope("all")}>All kept</button>
+          </div>
+        )}
+      </div>
+      {!has ? (
+        <p className="muted small" style={{ margin: "8px 0 0" }}>
+          These start filling in with your next Vercel snapshot (press <b>Fetch now</b> on Sources to start right away). From then on
+          KeepStat saves them every day, so you&apos;ll still have them after Vercel stops showing them. CSV imports don&apos;t include them.
+        </p>
+      ) : (
+        <div className="bd-grid">
+          {DIM_INFO.map((d) => {
+            const items = (breakdown.dims[d.key]?.[scope] ?? []).filter((i) => i[d.metric] > 0).slice(0, 6);
+            const total = (breakdown.dims[d.key]?.[scope] ?? []).reduce((s, i) => s + i[d.metric], 0);
+            const max = Math.max(1, ...items.map((i) => i[d.metric]));
+            return (
+              <div key={d.key} className="bd">
+                <div className="bd-h">
+                  <span>{d.title}</span>
+                  <span className="faint">{d.unit}</span>
+                </div>
+                {items.length ? (
+                  <ol>
+                    {items.map((i) => (
+                      <li key={i.key} title={i.key}>
+                        <span className="bd-bar" style={{ width: `${(i[d.metric] / max) * 100}%` }} />
+                        <span className="bd-k">{prettyKey(d.key, i.key)}</span>
+                        <span className="bd-v">{fmt(i[d.metric])}</span>
+                        <span className="bd-p">{total ? `${Math.round((i[d.metric] / total) * 100)}%` : ""}</span>
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="muted small">Nothing in this period yet.</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

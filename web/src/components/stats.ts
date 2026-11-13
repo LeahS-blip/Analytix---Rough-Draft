@@ -1,5 +1,5 @@
-import type { MetricRow, MonthRow } from "@/lib/data";
-import { dayLabel, monthLabel } from "./client";
+import type { BreakdownSummary, MetricRow, MonthRow, SourceRow } from "@/lib/data";
+import { dayLabel, monthFull, monthLabel } from "./client";
 
 export type Range = "30d" | "6m" | "1y" | "all";
 export const RANGES: { key: Range; label: string }[] = [
@@ -206,4 +206,133 @@ function rolling(a: number[], w: number) {
 function cumulative(a: number[]) {
   let s = 0;
   return a.map((v) => (s += v));
+}
+
+/* ---------------- insights: things a 30-day dashboard can't tell you ---------------- */
+
+
+export type Insight = { kind: "kept" | "spike" | "momentum" | "pace" | "weekday" | "record" | "rising" | "source"; title: string; detail: string };
+
+const WEEKDAYS = ["Sundays", "Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays"];
+const n0 = (v: number) => Math.round(v).toLocaleString("en-US");
+const pctTxt = (p: number) => `${p >= 0 ? "up" : "down"} ${Math.abs(Math.round(p))}%`;
+const median = (a: number[]) => {
+  const s = [...a].sort((x, y) => x - y);
+  return s.length ? (s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : 0;
+};
+const longDay = (d: string) => new Date(d + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+
+/**
+ * Plain-language findings from the kept history. Each one only appears when there's
+ * enough data to say it honestly (e.g. weekday patterns need three full weeks).
+ */
+export function insights(daily: MetricRow[], sources: SourceRow[], breakdown: BreakdownSummary): Insight[] {
+  const out: Insight[] = [];
+  const today = daysAgo(0);
+  // finished days only (today is still filling up)
+  const days = daily.filter((d) => d.date < today && d.visitors != null) as (MetricRow & { visitors: number })[];
+  const vis = new Map(days.map((d) => [d.date, d.visitors]));
+  const sumRange = (from: number, to: number) => {
+    let s = 0, c = 0;
+    for (let i = from; i <= to; i++) { const v = vis.get(daysAgo(i)); if (v != null) { s += v; c++; } }
+    return { s, c };
+  };
+
+  // 1. History the provider no longer shows
+  const window = sources.map((s) => s.max_days).find((m): m is number => typeof m === "number");
+  if (window && days.length) {
+    const beyond = days.filter((d) => d.date < daysAgo(window)).length;
+    if (beyond > 0)
+      out.push({ kind: "kept", title: `${n0(beyond)} day${beyond === 1 ? "" : "s"} Vercel no longer shows`, detail: `Your plan shows the last ${window + 1} days. KeepStat still has every day since ${longDay(days[0].date)}.` });
+  }
+
+  // 2. Spikes, and who caused them
+  const spikes: Insight[] = [];
+  days.forEach((d, i) => {
+    const before = days.slice(Math.max(0, i - 28), i).map((x) => x.visitors);
+    if (before.length < 7) return;
+    const base = median(before);
+    if (d.visitors >= 10 && base > 0 && d.visitors >= 2 * base) {
+      const ref = breakdown.topReferrerByDay[d.date];
+      spikes.push({
+        kind: "spike",
+        title: `${longDay(d.date)}: ${(d.visitors / base).toFixed(1)}× a normal day`,
+        detail: ref && ref.share >= 0.2
+          ? `${n0(d.visitors)} visitors, ${Math.round(ref.share * 100)}% of them from ${ref.key}.`
+          : `${n0(d.visitors)} visitors against a usual ${n0(base)}.`,
+      });
+    }
+  });
+  out.push(...spikes.slice(-2).reverse());
+
+  // 3. Momentum: last 7 finished days vs the 7 before
+  const a = sumRange(1, 7), b = sumRange(8, 14);
+  if (a.c >= 6 && b.c >= 6 && b.s > 0) {
+    const p = ((a.s / a.c - b.s / b.c) / (b.s / b.c)) * 100;
+    const prevSpike = spikes.map((x) => x.title.split(":")[0]).find((label) => { for (let i = 8; i <= 14; i++) if (longDay(daysAgo(i)) === label) return true; return false; });
+    out.push({
+      kind: "momentum",
+      title: `Last 7 days: ${n0(a.s)} visitors, ${pctTxt(p)}`,
+      detail: `Compared with the 7 days before (${n0(b.s)}), per day.${prevSpike && p < 0 ? ` That week included the ${prevSpike} spike.` : ""}`,
+    });
+  }
+
+  // 4. Pace: this month's daily average vs last month's
+  const thisM = today.slice(0, 7), lastM = shiftMonth(thisM, -1);
+  const mDays = (m: string) => days.filter((d) => d.date.startsWith(m));
+  const tm = mDays(thisM), lm = mDays(lastM);
+  if (tm.length >= 3 && lm.length >= 7) {
+    const avg = (r: typeof days) => r.reduce((s, d) => s + d.visitors, 0) / r.length;
+    const p = ((avg(tm) - avg(lm)) / avg(lm)) * 100;
+    out.push({ kind: "pace", title: `${monthFull(thisM).split(" ")[0]} is ${pctTxt(p)} on ${monthFull(lastM).split(" ")[0]}`, detail: `${n0(avg(tm))} visitors a day so far, against ${n0(avg(lm))} a day last month.` });
+  }
+
+  // 5. Best weekday (needs 3 full weeks)
+  if (days.length >= 21) {
+    const by: number[][] = [[], [], [], [], [], [], []];
+    days.slice(-84).forEach((d) => by[new Date(d.date + "T00:00:00Z").getUTCDay()].push(d.visitors));
+    // medians, so one viral day can't make its weekday look like the best
+    const avgs = by.map((x) => (x.length ? median(x) : 0));
+    const all = median(days.slice(-84).map((d) => d.visitors));
+    const best = avgs.indexOf(Math.max(...avgs)), worst = avgs.indexOf(Math.min(...avgs));
+    if (all > 0 && avgs[best] > all * 1.1)
+      out.push({ kind: "weekday", title: `${WEEKDAYS[best]} are your best day`, detail: `A typical ${WEEKDAYS[best].slice(0, -1)} is ${Math.round((avgs[best] / all - 1) * 100)}% above a typical day. ${WEEKDAYS[worst]} are the quietest.` });
+  }
+
+  // 6. Records
+  if (days.length >= 14) {
+    const best = days.reduce((m, d) => (d.visitors > m.visitors ? d : m));
+    let bestWeek = { end: "", s: -1 };
+    for (let i = 6; i < days.length; i++) {
+      const s = days.slice(i - 6, i + 1).reduce((t, d) => t + d.visitors, 0);
+      if (s > bestWeek.s) bestWeek = { end: days[i].date, s };
+    }
+    out.push({ kind: "record", title: `Best day kept: ${longDay(best.date)}, ${n0(best.visitors)} visitors`, detail: `Best 7-day run: ${n0(bestWeek.s)} visitors, ending ${longDay(bestWeek.end)}.` });
+  }
+
+  // 7. Pages: rising vs the month before, or what leads lately
+  const pages = breakdown.dims.requestPath;
+  if (pages?.recent.length) {
+    const prior = new Map(pages.prior.map((p) => [p.key, p.pageviews]));
+    const rising = pages.recent
+      .filter((p) => p.key !== "Others" && (prior.get(p.key) ?? 0) >= 5)
+      .map((p) => ({ ...p, growth: (p.pageviews - prior.get(p.key)!) / prior.get(p.key)! }))
+      .filter((p) => p.growth >= 0.3)
+      .sort((x, y) => y.growth - x.growth)[0];
+    if (rising) out.push({ kind: "rising", title: `Rising: ${rising.key}`, detail: `${n0(rising.pageviews)} views in the last 30 days, ${pctTxt(rising.growth * 100)} on the 30 before.` });
+    else {
+      const total = pages.recent.reduce((s, p) => s + p.pageviews, 0);
+      const lead = pages.recent.find((p) => p.key !== "Others");
+      if (lead && total) out.push({ kind: "rising", title: `Most viewed lately: ${lead.key}`, detail: `${Math.round((lead.pageviews / total) * 100)}% of page views in the last 30 days.` });
+    }
+  }
+
+  // 8. Where visitors come from
+  const refs = breakdown.dims.referrerHostname?.recent.filter((r) => r.key !== "Others");
+  if (refs?.length) {
+    const total = refs.reduce((s, r) => s + r.visitors, 0);
+    const ext = refs.find((r) => r.key !== "(direct)");
+    if (ext && total) out.push({ kind: "source", title: `Top referrer: ${ext.key}`, detail: `${Math.round((ext.visitors / total) * 100)}% of visitors in the last 30 days. Direct visits: ${Math.round(((refs.find((r) => r.key === "(direct)")?.visitors ?? 0) / total) * 100)}%.` });
+  }
+  return out;
 }

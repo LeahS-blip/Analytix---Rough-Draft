@@ -4,7 +4,8 @@
  * Needs a personal/team access token (integration OAuth tokens lack the analytics scope).
  */
 
-const API = "https://api.vercel.com";
+// KEEPSTAT_VERCEL_API lets local tests point at a stand-in for Vercel (scripts/mock-vercel.mjs).
+const API = process.env.KEEPSTAT_VERCEL_API || "https://api.vercel.com";
 
 export type VercelConfig = {
   token: string;
@@ -97,6 +98,39 @@ export async function fetchDaily(cfg: VercelConfig, since: string, until: string
 }
 
 const isoDay = (offset: number) => new Date(Date.now() + offset * 864e5).toISOString().slice(0, 10);
+
+/** The breakdowns KeepStat keeps. Vercel dimension name → what we call it. */
+export const DIMENSIONS = ["requestPath", "referrerHostname", "country", "deviceType"] as const;
+export type Dimension = (typeof DIMENSIONS)[number];
+export type BreakdownRow = { key: string; visitors: number; pageviews: number };
+
+/**
+ * Top values of one dimension between two YYYY-MM-DD dates (inclusive), e.g. the top
+ * pages for a day. Vercel groups anything past `limit` into an "Others" row, which we keep.
+ */
+export async function fetchBreakdown(
+  cfg: VercelConfig,
+  dimension: Dimension,
+  since: string,
+  until: string,
+  limit = 25
+): Promise<BreakdownRow[]> {
+  const body = await call<{ data?: Record<string, unknown>[] }>(cfg.token, "/v1/query/web-analytics/visits/aggregate", {
+    projectId: cfg.projectId,
+    teamId: cfg.teamId,
+    since,
+    until,
+    by: dimension,
+    limit: String(limit),
+  });
+  return (body?.data ?? [])
+    .map((r) => ({
+      key: String(r[dimension] ?? "").trim() || (dimension === "referrerHostname" ? "(direct)" : "(unknown)"),
+      visitors: Number(r.visitors ?? 0),
+      pageviews: Number(r.pageviews ?? 0),
+    }))
+    .filter((r) => r.visitors > 0 || r.pageviews > 0);
+}
 
 /**
  * The plan limit Vercel reports when a range reaches too far back, e.g.

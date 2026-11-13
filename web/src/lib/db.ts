@@ -82,10 +82,23 @@ CREATE TABLE IF NOT EXISTS app_config (
 );
 -- v2: remember how many days back each source is allowed to read (Vercel plan limit)
 ALTER TABLE sources ADD COLUMN IF NOT EXISTS max_days INTEGER;
+-- v3: what made up the traffic (top pages, referrers, countries, devices), kept forever.
+-- Daily rows have date_from = date_to; the first backfill stores one row per key for its whole range.
+CREATE TABLE IF NOT EXISTS breakdowns (
+  site_id INTEGER NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+  dimension TEXT NOT NULL,
+  date_from TEXT NOT NULL,
+  date_to TEXT NOT NULL,
+  key TEXT NOT NULL,
+  visitors INTEGER,
+  pageviews INTEGER,
+  PRIMARY KEY (site_id, dimension, date_from, date_to, key)
+);
+CREATE INDEX IF NOT EXISTS breakdowns_range ON breakdowns(site_id, dimension, date_to);
 `;
 
 /** Bump when SCHEMA changes; cold starts skip the DDL when the database is already current. */
-const SCHEMA_VERSION = "2";
+const SCHEMA_VERSION = "3";
 
 async function connectPostgres(url: string): Promise<Db> {
   const { default: postgres } = await import("postgres");

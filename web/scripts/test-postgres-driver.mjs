@@ -46,7 +46,7 @@ try {
   const sess = await q1("SELECT now() > now() - interval '20 hours' AS ok");
   assert.equal(sess.ok, true);
   // 7. Schema version is recorded, so the next cold start skips the DDL; max_days exists.
-  assert.equal((await q1("SELECT value FROM app_config WHERE key = 'schema_version'")).value, "2");
+  assert.equal((await q1("SELECT value FROM app_config WHERE key = 'schema_version'")).value, "3");
   const srcId = (await q1("INSERT INTO sources (site_id, kind, label, config_enc) VALUES ($1, 'vercel', 'v', 'x') RETURNING id", [sid])).id;
   const learn = "UPDATE sources SET max_days = CASE WHEN $2::int < $3::int THEN $2::int ELSE max_days END WHERE id = $1";
   await q(learn, [srcId, 30, 730]); // Vercel shrank the range: remember 30

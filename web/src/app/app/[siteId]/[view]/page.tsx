@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireUser, HttpError } from "@/lib/auth";
-import { dailyMetrics, getSite, listSites, listSnapshots, listSources, monthlyMetrics } from "@/lib/data";
+import { breakdownSummary, dailyMetrics, getSite, listSites, listSnapshots, listSources, monthlyMetrics } from "@/lib/data";
 import { Dashboard } from "@/components/Dashboard";
 import { VIEWS, type View } from "@/components/views";
 
@@ -14,7 +14,7 @@ export default async function SitePage({ params }: { params: Promise<{ siteId: s
 
   // One round trip for everything: the ownership check runs alongside the data queries.
   // Nothing is sent to the browser unless the site belongs to this user.
-  const [site, sites, daily, monthly, sources, snapshots] = await Promise.all([
+  const [site, sites, daily, monthly, sources, snapshots, breakdown] = await Promise.all([
     getSite(user.id, id).catch((e) => {
       if (e instanceof HttpError) return null;
       throw e;
@@ -24,6 +24,7 @@ export default async function SitePage({ params }: { params: Promise<{ siteId: s
     monthlyMetrics(id),
     listSources(id),
     listSnapshots(id),
+    breakdownSummary(id),
   ]);
   if (!site) notFound();
 
@@ -39,6 +40,7 @@ export default async function SitePage({ params }: { params: Promise<{ siteId: s
       monthly={plain(monthly)}
       sources={plain(sources)}
       snapshots={plain(snapshots)}
+      breakdown={plain(breakdown)}
     />
   );
 }

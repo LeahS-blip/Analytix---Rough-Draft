@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import type { MetricRow, MonthRow, Site, SnapshotRow, SourceRow } from "@/lib/data";
+import type { BreakdownSummary, MetricRow, MonthRow, Site, SnapshotRow, SourceRow } from "@/lib/data";
 import { LogoMark } from "./Logo";
 import { NewSiteForm } from "./NewSiteForm";
 import { monthLabel, postJson } from "./client";
@@ -21,6 +21,7 @@ export type DashProps = {
   monthly: MonthRow[];
   sources: SourceRow[];
   snapshots: SnapshotRow[];
+  breakdown: BreakdownSummary;
 };
 
 /* ---------------- shared UI context ---------------- */
