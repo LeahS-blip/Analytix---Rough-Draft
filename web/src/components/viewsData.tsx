@@ -88,7 +88,11 @@ export function OverviewView({ site, daily, monthly, sources, range }: DashProps
           <div>
             <h3>Visitors — full history kept</h3>
             <div className="sub">
-              {series.granularity === "day" ? "Daily visitors, last 30 days" : `Monthly totals (${RANGE_TEXT[range]})`}
+              {series.granularity === "month"
+                ? `Monthly totals (${RANGE_TEXT[range]})`
+                : range === "30d"
+                  ? "Daily visitors, last 30 days"
+                  : `Daily visitors since ${series.labels[0]} · monthly totals appear once you've kept a few months`}
               {sources.length ? " · your provider only shows a rolling window" : ""}
             </div>
           </div>
@@ -114,8 +118,12 @@ export function OverviewView({ site, daily, monthly, sources, range }: DashProps
             </span>
           )}
           {series.partial && (
-            <span className="so-far" title="The current month isn't over, so it's left off the line">
-              {series.partial.label} so far · <b>{fmt(series.partial.value)}</b> · {series.partial.days} day{series.partial.days === 1 ? "" : "s"}
+            <span
+              className="so-far"
+              title={series.granularity === "day" ? "Today isn't over, so it's left off the line" : "This month isn't over, so it's left off the line"}
+            >
+              {series.partial.label} so far · <b>{fmt(series.partial.value)}</b>
+              {series.granularity === "month" && <> · {series.partial.days} day{series.partial.days === 1 ? "" : "s"}</>}
             </span>
           )}
         </div>

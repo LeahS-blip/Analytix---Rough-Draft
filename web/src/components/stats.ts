@@ -55,7 +55,45 @@ export type Series = {
   partial: { label: string; value: number; days: number } | null;
 };
 
+/** Under this much history, a monthly chart is one or two dots, so plot days instead. */
+const DAILY_UNTIL_DAYS = 120;
+
+const dayDiff = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
+
+/** Every day from `from` to yesterday, with today shown separately as "so far". */
+function dailySeries(from: string, daily: MetricRow[]): Series {
+  const byDate = new Map(daily.map((d) => [d.date, d.visitors]));
+  const today = daysAgo(0);
+  const end = daysAgo(1);
+  const n = Math.max(2, dayDiff(from, end) + 1);
+  const keys = Array.from({ length: n }, (_, i) => daysAgo(dayDiff(from, today) - i));
+  const yearAgo = (k: string) => new Date(Date.parse(k) - 365 * 864e5).toISOString().slice(0, 10);
+  const edge = daysAgo(30);
+  const ei = keys.indexOf(edge);
+  const todayVal = byDate.get(today);
+  return {
+    labels: keys.map(dayLabel),
+    keys,
+    values: keys.map((k) => byDate.get(k) ?? null),
+    prev: keys.map((k) => byDate.get(yearAgo(k)) ?? null),
+    edgeAt: ei > 0 ? ei : null,
+    granularity: "day",
+    partial: todayVal != null ? { label: "Today", value: todayVal, days: 1 } : null,
+  };
+}
+
 export function buildSeries(range: Range, daily: MetricRow[], monthly: MonthRow[]): Series {
+  // Short history (e.g. a new Vercel connection on the free plan, ~30 days): show days, not months.
+  const firstDay = daily[0]?.date;
+  // Only imported monthly totals count as older history (summary rows built from days start on the 1st).
+  const firstImportedMonth = monthly.find((m) => m.granularity === "month")?.date;
+  const firstAny = [firstDay, firstImportedMonth].filter(Boolean).sort()[0];
+  if (range !== "30d" && firstDay && firstAny === firstDay && dayDiff(firstDay, daysAgo(0)) <= DAILY_UNTIL_DAYS) {
+    const windowStart = range === "6m" ? daysAgo(182) : range === "1y" ? daysAgo(365) : firstDay;
+    const from = windowStart > firstDay ? windowStart : firstDay;
+    // at least two weeks wide, so two days of data don't fill the whole chart
+    return dailySeries(dayDiff(from, daysAgo(0)) < 14 ? daysAgo(14) : from, daily);
+  }
   if (range === "30d") {
     const byDate = new Map(daily.map((d) => [d.date, d.visitors]));
     const keys = Array.from({ length: 30 }, (_, i) => daysAgo(29 - i));

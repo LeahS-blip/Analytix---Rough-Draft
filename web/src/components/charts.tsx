@@ -7,7 +7,9 @@ export function niceTicks(dataMax: number): number[] {
   if (dataMax <= 0) return [0, 5, 10];
   const rough = dataMax / 4;
   const p = Math.pow(10, Math.floor(Math.log10(rough)));
-  const step = [1, 2, 2.5, 5, 10].map((m) => m * p).find((s) => s >= rough)!;
+  // visitors are whole numbers: no 2.5-visitor steps on small charts
+  const mults = p <= 1 ? [1, 2, 5, 10] : [1, 2, 2.5, 5, 10];
+  const step = Math.max(1, mults.map((m) => m * Math.max(1, p)).find((s) => s >= rough) ?? 10 * Math.max(1, p));
   const top = Math.ceil(dataMax / step) * step;
   const out: number[] = [];
   for (let t = 0; t <= top + step / 2; t += step) out.push(+t.toFixed(6));
@@ -74,8 +76,20 @@ export function LineChart({
   let lastIdx = -1;
   values.forEach((v, i) => v != null && (lastIdx = i));
   const line = path(values);
-  const contiguous = firstIdx >= 0 && values.slice(firstIdx, lastIdx + 1).every((v) => v != null);
-  const area = contiguous && lastIdx > firstIdx ? `${line} L${x(lastIdx)} ${padT + ih} L${x(firstIdx)} ${padT + ih} Z` : null;
+  // Shade under each run of consecutive values, so a missing day doesn't blank the whole fill.
+  const runs: [number, number][] = [];
+  values.forEach((v, i) => {
+    if (v == null) return;
+    const last = runs.at(-1);
+    if (last && last[1] === i - 1) last[1] = i;
+    else runs.push([i, i]);
+  });
+  const area = runs
+    .filter(([a, b]) => b > a)
+    .map(([a, b]) => `${path(values.slice(0, b + 1).map((v, i) => (i < a ? null : v)))} L${x(b)} ${padT + ih} L${x(a)} ${padT + ih} Z`)
+    .join(" ");
+  const lonely = runs.filter(([a, b]) => a === b).map(([a]) => a); // a single day between gaps: show it as a dot
+  const dots = n <= 45; // few enough points to mark each one
 
   function onMove(e: React.PointerEvent<SVGSVGElement>) {
     const r = svgRef.current!.getBoundingClientRect();
@@ -88,6 +102,10 @@ export function LineChart({
   const hp = hover != null && prev ? prev[hover] : null;
   const tipW = prev ? 168 : 132;
   const tipX = hover != null ? Math.min(Math.max(x(hover) - tipW / 2, padL), width - padR - tipW) : 0;
+  const tipH = prev ? 52 : 38;
+  const anchorY = hover != null ? y(hv ?? hp ?? max / 2) : 0;
+  // sit just above the point; flip below it near the top of the chart
+  const tipY = anchorY - tipH - 14 >= 2 ? anchorY - tipH - 14 : Math.min(anchorY + 14, height - tipH - 2);
 
   return (
     <svg
@@ -128,6 +146,11 @@ export function LineChart({
         </g>
       )}
       <path d={line} className="chart-line" fill="none" stroke="var(--accent)" strokeWidth={2.75} strokeLinecap="round" strokeLinejoin="round" />
+      {values.map((v, i) =>
+        v != null && (dots || lonely.includes(i)) && i !== lastIdx ? (
+          <circle key={i} cx={x(i)} cy={y(v)} r={lonely.includes(i) ? 3.5 : 2.2} fill="var(--accent)" />
+        ) : null
+      )}
       {lastIdx >= 0 && hover == null && (
         <circle cx={x(lastIdx)} cy={y(values[lastIdx]!)} r={4.5} fill="var(--surface)" stroke="var(--accent)" strokeWidth={2.4} />
       )}
@@ -137,8 +160,8 @@ export function LineChart({
           <line x1={x(hover)} y1={padT} x2={x(hover)} y2={padT + ih} stroke="var(--line-strong)" strokeWidth={1} />
           {hp != null && <circle cx={x(hover)} cy={y(hp)} r={3.5} fill="var(--surface)" stroke="var(--ghost)" strokeWidth={2} />}
           {hv != null && <circle cx={x(hover)} cy={y(hv)} r={5} fill="var(--accent)" stroke="var(--surface)" strokeWidth={2.5} />}
-          <g transform={`translate(${tipX} ${padT - 18})`}>
-            <rect width={tipW} height={prev ? 52 : 38} rx={8} className="tip-bg" />
+          <g transform={`translate(${tipX} ${tipY})`}>
+            <rect width={tipW} height={tipH} rx={4} className="tip-bg" />
             <text x={10} y={15} className="tip-k">{labels[hover]}</text>
             <text x={10} y={31} className="tip-v">{hv == null ? "no data" : `${fmtN(hv)} ${unit}`}</text>
             {prev && <text x={10} y={45} className="tip-k">{hp == null ? "year before: —" : `year before: ${fmtN(hp)}`}</text>}
