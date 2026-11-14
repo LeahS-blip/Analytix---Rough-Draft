@@ -62,6 +62,20 @@ http
     const auth = req.headers.authorization || "";
     const body = req.method === "POST" ? await readBody(req) : {};
 
+    /* ---------- Claude API (screenshot import): ANTHROPIC_BASE_URL=http://127.0.0.1:5099/anthropic ---------- */
+    if (p === "/anthropic/v1/messages") {
+      // x-api-key in production; a dev shell may hold an ANTHROPIC_AUTH_TOKEN instead, which the SDK sends as a bearer
+      if (req.headers["x-api-key"] !== T && !/^Bearer \S+$/.test(req.headers.authorization || "")) return send(401, { type: "error", error: { type: "authentication_error", message: "invalid x-api-key" } });
+      const img = body.messages?.[0]?.content?.find((c) => c.type === "image");
+      const checks = { model: body.model, hasImage: !!img?.source?.data, media: img?.source?.media_type, format: body.output_config?.format?.type, fallbacks: body.fallbacks, beta: req.headers["anthropic-beta"] };
+      console.log("claude request", JSON.stringify(checks));
+      if (!img?.source?.data || body.output_config?.format?.type !== "json_schema") return send(400, { type: "error", error: { type: "invalid_request_error", message: "bad mock request" } });
+      // pretend the screenshot showed 14 days with a table of numbers
+      const rows = range(iso(today - 14 * DAY), iso(today - 1 * DAY)).map((d) => ({ date: d, visitors: visitors(d), pageviews: Math.round(visitors(d) * 1.6), bounce_rate: null }));
+      const reading = { is_analytics: true, provider: "Fathom", granularity: "day", method: "exact", rows, notes: "Read 14 days of visitors and page views from the table. Bounce rate wasn't shown." };
+      return send(200, { id: "msg_mock", type: "message", role: "assistant", model: body.model, content: [{ type: "text", text: JSON.stringify(reading) }], stop_reason: "end_turn", stop_sequence: null, usage: { input_tokens: 1500, output_tokens: 400 } });
+    }
+
     /* ---------- GA4 (token first: no bearer yet) ---------- */
     if (p === "/ga/token") {
       const payload = JSON.parse(Buffer.from(String(body.assertion).split(".")[1], "base64url").toString());

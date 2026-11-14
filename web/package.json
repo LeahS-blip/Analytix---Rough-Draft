@@ -12,11 +12,13 @@
     "node": ">=22.13"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
     "@electric-sql/pglite": "^0.3.7",
     "next": "15.5.29",
     "postgres": "^3.4.7",
     "react": "19.1.10",
-    "react-dom": "19.1.10"
+    "react-dom": "19.1.10",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@electric-sql/pglite-socket": "^0.0.15",

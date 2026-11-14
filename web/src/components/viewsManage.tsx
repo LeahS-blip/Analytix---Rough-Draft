@@ -112,18 +112,62 @@ export function ImportView({ site }: DashProps) {
   const [preview, setPreview] = useState<ParseResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function load(f: File) {
-    setError(null);
-    setPreview(null);
-    if (f.size > 5 * 1024 * 1024) return setError("That file is larger than 5 MB.");
-    setBusy(true);
-    const text = await f.text();
-    setFile({ name: f.name, text });
-    const r = await postJson<ParseResult>(`/api/sites/${site.id}/import`, { text, filename: f.name });
-    setBusy(false);
+  const shotInput = useRef<HTMLInputElement>(null);
+  const [shotDrag, setShotDrag] = useState(false);
+  const [reading, setReading] = useState(false);
+  const [aiNote, setAiNote] = useState<{ notes: string; method: string } | null>(null);
+
+  async function previewText(name: string, text: string) {
+    setFile({ name, text });
+    const r = await postJson<ParseResult>(`/api/sites/${site.id}/import`, { text, filename: name });
     if ("error" in r) setError(r.error);
     else setPreview(r);
   }
+
+  async function load(f: File) {
+    if (f.type.startsWith("image/")) return loadShot(f);
+    setError(null);
+    setPreview(null);
+    setAiNote(null);
+    if (f.size > 5 * 1024 * 1024) return setError("That file is larger than 5 MB.");
+    setBusy(true);
+    await previewText(f.name, await f.text());
+    setBusy(false);
+  }
+
+  async function loadShot(f: File) {
+    setError(null);
+    setPreview(null);
+    setAiNote(null);
+    setFile(null);
+    if (!f.type.startsWith("image/")) return setError("Drop an image (PNG, JPEG or WebP) here, or use the CSV box for files.");
+    setReading(true);
+    try {
+      const img = await shrinkImage(f);
+      const r = await postJson<{ csv: string; filename: string; notes: string; method: string }>(`/api/sites/${site.id}/import/screenshot`, img);
+      if ("error" in r) return setError(r.error);
+      setAiNote({ notes: r.notes, method: r.method });
+      await previewText(r.filename, r.csv);
+    } catch {
+      setError("Couldn't open that image. Try a PNG or JPEG screenshot.");
+    } finally {
+      setReading(false);
+    }
+  }
+
+  // Paste a screenshot straight from the clipboard (Ctrl/Cmd+V) anywhere on this page.
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const item = [...(e.clipboardData?.items ?? [])].find((i) => i.type.startsWith("image/"));
+      const f = item?.getAsFile();
+      if (f) {
+        e.preventDefault();
+        loadShot(f);
+      }
+    };
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  });
 
   async function save() {
     if (!file) return;
@@ -184,14 +228,48 @@ export function ImportView({ site }: DashProps) {
             }}
           />
         </div>
-        <div className="imp soon">
+        <div className="imp">
           <div className="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="8.5" cy="10" r="1.6" /><path d="M21 16l-5-5-4 4-2-2-4 4" /></svg></div>
-          <h3>Screenshot import <span className="soon-tag">soon</span></h3>
-          <p>Drop a screenshot of any dashboard and AI reads the numbers into rows. Coming in the next release.</p>
+          <h3>Screenshot import</h3>
+          <p>Drop or paste a screenshot of any dashboard. AI reads the numbers into rows, and you check them before saving.</p>
+          <div
+            className={`dropzone${shotDrag ? " drag" : ""}${reading ? " busy" : ""}`}
+            role="button"
+            tabIndex={0}
+            onClick={() => shotInput.current?.click()}
+            onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && shotInput.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); setShotDrag(true); }}
+            onDragLeave={() => setShotDrag(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setShotDrag(false);
+              const f = e.dataTransfer.files?.[0];
+              if (f) loadShot(f);
+            }}
+          >
+            {reading ? <><span className="spin" /> Reading the numbers…</> : "Click, drop, or paste (Ctrl+V) an image"}
+          </div>
+          <input
+            ref={shotInput}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            hidden
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) loadShot(f);
+              e.target.value = "";
+            }}
+          />
         </div>
       </div>
 
       {error && <div className="err" role="alert">{error}</div>}
+      {aiNote && preview && (
+        <div className={`ai-note${aiNote.method === "estimated" ? " est" : ""}`} role="status">
+          <b>{aiNote.method === "estimated" ? "Estimated from the chart." : "Read from the screenshot."}</b> {aiNote.notes}{" "}
+          {aiNote.method === "estimated" ? "Check the numbers against the original before saving." : "Check a few rows against the original before saving."}
+        </div>
+      )}
 
       {preview && file && (
         <div className="card">
@@ -244,13 +322,39 @@ export function ImportView({ site }: DashProps) {
             Rows for dates you already have are updated with these numbers. The original file is kept in your snapshot log.
           </p>
           <div className="modal-actions" style={{ marginTop: 14 }}>
-            <button className="btn ghost" onClick={() => { setPreview(null); setFile(null); }}>Discard</button>
+            <button className="btn ghost" onClick={() => { setPreview(null); setFile(null); setAiNote(null); }}>Discard</button>
             <button className="btn primary" onClick={save} disabled={busy}>{busy ? <span className="spin" /> : null} Confirm &amp; save</button>
           </div>
         </div>
       )}
     </>
   );
+}
+
+/**
+ * Shrink a screenshot before upload: the long edge to at most 2000px, re-encoded as JPEG unless
+ * it's already small. Keeps requests well under the server's body limit and reads just as well.
+ */
+async function shrinkImage(f: File): Promise<{ image: string; mediaType: string }> {
+  const MAX = 2000;
+  const bitmap = await createImageBitmap(f);
+  const scale = Math.min(1, MAX / Math.max(bitmap.width, bitmap.height));
+  const small = scale === 1 && f.size < 1.5 * 1024 * 1024 && ["image/png", "image/jpeg", "image/webp"].includes(f.type);
+  if (small) {
+    const buf = new Uint8Array(await f.arrayBuffer());
+    let bin = "";
+    for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+    return { image: btoa(bin), mediaType: f.type };
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "#fff"; // transparent PNGs become white, not black, as JPEG
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  const url = canvas.toDataURL("image/jpeg", 0.9);
+  return { image: url.slice(url.indexOf(",") + 1), mediaType: "image/jpeg" };
 }
 
 function previewRows(p: ParseResult) {
