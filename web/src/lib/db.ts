@@ -95,10 +95,13 @@ CREATE TABLE IF NOT EXISTS breakdowns (
   PRIMARY KEY (site_id, dimension, date_from, date_to, key)
 );
 CREATE INDEX IF NOT EXISTS breakdowns_range ON breakdowns(site_id, dimension, date_to);
+-- v4: push sources (your own script sends numbers). Only a SHA-256 of the key is stored.
+ALTER TABLE sources ADD COLUMN IF NOT EXISTS ingest_hash TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS sources_ingest ON sources(ingest_hash) WHERE ingest_hash IS NOT NULL;
 `;
 
 /** Bump when SCHEMA changes; cold starts skip the DDL when the database is already current. */
-const SCHEMA_VERSION = "3";
+const SCHEMA_VERSION = "4";
 
 async function connectPostgres(url: string): Promise<Db> {
   const { default: postgres } = await import("postgres");

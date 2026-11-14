@@ -161,3 +161,32 @@ th+th,td+td{padding-left:16px}
 .bd-k{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
 .bd-v{font-family:"Fragment Mono",monospace;color:var(--ink)}
 .bd-p{font-family:"Fragment Mono",monospace;font-size:11.5px;color:var(--muted);text-align:right}
+.ins-ai .ins-tag,.ins-newref .ins-tag,.ins-streak .ins-tag{color:var(--accent-deep)}
+
+/* channels: one stacked bar + legend */
+.chan{margin:14px 0 4px}
+.chan-bar{display:flex;height:12px;border-radius:2px;overflow:hidden;background:var(--surface-3)}
+.chan-bar span{display:block;height:100%}
+.chan-leg{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:8px;font-size:12.5px;color:var(--muted)}
+.chan-leg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.chan-leg b{color:var(--ink);font-family:"Fragment Mono",monospace;font-weight:400;margin-left:4px}
+
+/* by the numbers */
+.nums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin-top:8px}
+@media(max-width:900px){.nums{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.num-cell{padding:14px 16px 14px 0;border-top:1px solid var(--line)}
+.num-cell .nl{font-size:12.5px;color:var(--muted)}
+.num-cell .nv{font:800 24px "Archivo",sans-serif;letter-spacing:-.02em;color:var(--ink);margin-top:2px;font-variant-numeric:tabular-nums}
+.num-cell .nf{font-size:12px;color:var(--faint);margin-top:2px}
+
+/* weekday bars */
+.wk{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;align-items:end;height:150px;margin-top:14px}
+.wk div{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:6px}
+.wk .bar{width:100%;max-width:46px;background:var(--accent);opacity:.35;border-radius:2px 2px 0 0;min-height:2px}
+.wk .bar.top{opacity:1}
+.wk .wl{font-family:"Fragment Mono",monospace;font-size:11px;color:var(--faint)}
+.wk .wv{font-family:"Fragment Mono",monospace;font-size:11px;color:var(--ink-soft)}
+
+/* push key */
+.code-block{font-family:"Fragment Mono",monospace;font-size:11.5px;line-height:1.55;background:var(--surface-2);border:1px solid var(--line);border-radius:3px;padding:12px;margin:0;white-space:pre-wrap;word-break:break-all;color:var(--ink-soft)}
+.modal textarea.input{height:auto;white-space:pre-wrap}

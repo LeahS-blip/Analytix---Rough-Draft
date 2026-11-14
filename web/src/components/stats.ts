@@ -1,5 +1,6 @@
 import type { BreakdownSummary, MetricRow, MonthRow, SourceRow } from "@/lib/data";
 import { dayLabel, monthFull, monthLabel } from "./client";
+import { providerName } from "./providers";
 
 export type Range = "30d" | "6m" | "1y" | "all";
 export const RANGES: { key: Range; label: string }[] = [
@@ -211,7 +212,11 @@ function cumulative(a: number[]) {
 /* ---------------- insights: things a 30-day dashboard can't tell you ---------------- */
 
 
-export type Insight = { kind: "kept" | "spike" | "momentum" | "pace" | "weekday" | "record" | "rising" | "source"; title: string; detail: string };
+export type Insight = {
+  kind: "kept" | "spike" | "momentum" | "pace" | "weekday" | "record" | "rising" | "source" | "ai" | "channel" | "newref" | "projection" | "yoy" | "streak" | "bounce" | "growth";
+  title: string;
+  detail: string;
+};
 
 const WEEKDAYS = ["Sundays", "Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays"];
 const n0 = (v: number) => Math.round(v).toLocaleString("en-US");
@@ -239,11 +244,14 @@ export function insights(daily: MetricRow[], sources: SourceRow[], breakdown: Br
   };
 
   // 1. History the provider no longer shows
-  const window = sources.map((s) => s.max_days).find((m): m is number => typeof m === "number");
-  if (window && days.length) {
+  const limited = sources.find((s) => typeof s.max_days === "number");
+  const window = limited?.max_days;
+  if (limited && window && days.length) {
     const beyond = days.filter((d) => d.date < daysAgo(window)).length;
+    const name = providerName(limited.kind);
+    const shown = limited.kind === "vercel" ? window + 1 : window;
     if (beyond > 0)
-      out.push({ kind: "kept", title: `${n0(beyond)} day${beyond === 1 ? "" : "s"} Vercel no longer shows`, detail: `Your plan shows the last ${window + 1} days. KeepStat still has every day since ${longDay(days[0].date)}.` });
+      out.push({ kind: "kept", title: `${n0(beyond)} day${beyond === 1 ? "" : "s"} ${name} no longer shows`, detail: `${name} shows the last ${shown} days. KeepStat still has every day since ${longDay(days[0].date)}.` });
   }
 
   // 2. Spikes, and who caused them
@@ -334,5 +342,175 @@ export function insights(daily: MetricRow[], sources: SourceRow[], breakdown: Br
     const ext = refs.find((r) => r.key !== "(direct)");
     if (ext && total) out.push({ kind: "source", title: `Top referrer: ${ext.key}`, detail: `${Math.round((ext.visitors / total) * 100)}% of visitors in the last 30 days. Direct visits: ${Math.round(((refs.find((r) => r.key === "(direct)")?.visitors ?? 0) / total) * 100)}%.` });
   }
+
+  // 9. AI assistants and channels (which kinds of places send people)
+  const refScope = breakdown.dims.referrerHostname?.recent.length ? breakdown.dims.referrerHostname.recent : breakdown.dims.referrerHostname?.all;
+  if (refScope?.length) {
+    const ch = channels(refScope);
+    const total = ch.reduce((s, c) => s + c.visitors, 0);
+    const ai = ch.find((c) => c.channel === "AI assistants");
+    if (ai && ai.visitors > 0 && total)
+      out.push({ kind: "ai", title: `AI assistants sent ${n0(ai.visitors)} visitor${ai.visitors === 1 ? "" : "s"}`, detail: `${pctShare(ai.visitors, total)} of visitors${breakdown.dims.referrerHostname?.recent.length ? " in the last 30 days" : ""}, mostly from ${ai.top}. ChatGPT, Perplexity, Claude, Gemini and Copilot are grouped together here.` });
+    const lead = ch.filter((c) => c.channel !== "Direct" && c.channel !== "AI assistants")[0];
+    if (lead && total && lead.visitors / total >= 0.1)
+      out.push({ kind: "channel", title: `${lead.channel} brings ${pctShare(lead.visitors, total)} of visitors`, detail: ch.filter((c) => c.visitors > 0).map((c) => `${c.channel} ${pctShare(c.visitors, total)}`).join(" · ") });
+  }
+
+  // 10. Referrers that never sent anyone before
+  const fresh = breakdown.newReferrers?.filter((r) => r.visitors >= 3)[0];
+  if (fresh) out.push({ kind: "newref", title: `New: ${fresh.key} started sending visitors`, detail: `${n0(fresh.visitors)} visitors in the last 30 days, and none in all the history kept before that.` });
+
+  // 11. Where this month is heading
+  const finishedThis = tm.length;
+  const dim = new Date(Date.UTC(Number(thisM.slice(0, 4)), Number(thisM.slice(5, 7)), 0)).getUTCDate();
+  const todayNum = Number(today.slice(8, 10));
+  if (finishedThis >= 5 && todayNum < dim) {
+    // finished days so far, plus the month's daily average for today and the days left
+    const so = tm.reduce((s, d) => s + d.visitors, 0);
+    const perDay = so / finishedThis;
+    const projected = so + perDay * (dim - (todayNum - 1));
+    const lastFull = lm.length >= lmDays(lastM) - 1 ? lm.reduce((s, d) => s + d.visitors, 0) : null;
+    out.push({
+      kind: "projection",
+      title: `${monthFull(thisM).split(" ")[0]} is on pace for about ${n0(projected)} visitors`,
+      detail: lastFull ? `${monthFull(lastM).split(" ")[0]} finished with ${n0(lastFull)}, so that would be ${pctTxt(((projected - lastFull) / lastFull) * 100)}.` : `Based on ${finishedThis} finished days at ${n0(perDay)} a day.`,
+    });
+  }
+
+  // 12. Year over year: last 30 finished days vs the same days a year earlier
+  {
+    let s = 0, c = 0, ps = 0, pc = 0;
+    for (let i = 1; i <= 30; i++) {
+      const v = vis.get(daysAgo(i)), pv = vis.get(daysAgo(i + 365));
+      if (v != null && pv != null) { s += v; c++; ps += pv; pc++; }
+    }
+    if (c >= 20 && ps > 0)
+      out.push({ kind: "yoy", title: `${pctTxt(((s - ps) / ps) * 100).replace(/^./, (m) => m.toUpperCase())} on a year ago`, detail: `${n0(s)} visitors over the last ${c} days, against ${n0(ps)} on the same days last year.` });
+  }
+
+  // 13. Growth streak: consecutive weeks each above the one before
+  {
+    const weeks: number[] = [];
+    for (let w = 0; w < 12; w++) {
+      const r = sumRange(1 + w * 7, 7 + w * 7);
+      if (r.c < 6) break;
+      weeks.push(r.s);
+    }
+    let streak = 0;
+    while (streak + 1 < weeks.length && weeks[streak] > weeks[streak + 1]) streak++;
+    if (streak >= 3)
+      out.push({ kind: "streak", title: `${streak} weeks of growth in a row`, detail: `Every week since ${longDay(daysAgo(streak * 7))} beat the one before: ${n0(weeks[streak])} → ${n0(weeks[0])} visitors a week.` });
+  }
+
+  // 14. Bounce rate change (Plausible, GA4, Push API and imports carry it)
+  {
+    const b = (from: number, to: number) => {
+      const v = days.filter((d) => d.date <= daysAgo(from) && d.date >= daysAgo(to) && d.bounce_rate != null).map((d) => d.bounce_rate!);
+      return v.length >= 10 ? v.reduce((x, y) => x + y, 0) / v.length : null;
+    };
+    const now = b(1, 30), before = b(31, 60);
+    if (now != null && before != null && Math.abs(now - before) >= 2)
+      out.push({ kind: "bounce", title: `Bounce rate ${now < before ? "down" : "up"} to ${now.toFixed(1)}%`, detail: `From ${before.toFixed(1)}% the 30 days before. ${now < before ? "More visitors are staying for a second page." : "More visitors leave after one page."}` });
+  }
+
+  // 15. Best month ever (needs a few full months)
+  {
+    const full = new Map<string, number>();
+    for (const d of days) full.set(d.date.slice(0, 7), (full.get(d.date.slice(0, 7)) ?? 0) + d.visitors);
+    const counts = new Map<string, number>();
+    for (const d of days) counts.set(d.date.slice(0, 7), (counts.get(d.date.slice(0, 7)) ?? 0) + 1);
+    const complete = [...full.entries()].filter(([m]) => m < thisM && (counts.get(m) ?? 0) >= lmDays(m) - 1);
+    if (complete.length >= 3) {
+      const [bm, bv] = complete.reduce((a, b) => (b[1] > a[1] ? b : a));
+      if (bm === lastM) out.push({ kind: "growth", title: `${monthFull(bm)} was your best month kept`, detail: `${n0(bv)} visitors, out of ${complete.length} full months.` });
+    }
+  }
+
+  // Most useful first: what's happening now, then why, then patterns.
+  const ORDER: Insight["kind"][] = ["spike", "streak", "momentum", "projection", "yoy", "newref", "ai", "pace", "growth", "kept", "channel", "bounce", "rising", "source", "weekday", "record"];
+  return out.sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind));
+}
+
+const lmDays = (m: string) => new Date(Date.UTC(Number(m.slice(0, 4)), Number(m.slice(5, 7)), 0)).getUTCDate();
+const pctShare = (a: number, total: number) => `${a / total < 0.01 && a > 0 ? "<1" : Math.round((a / total) * 100)}%`;
+
+/* ---------------- channels: what kind of place sent each visitor ---------------- */
+
+export type Channel = "Direct" | "Search" | "Social" | "AI assistants" | "Email" | "Referral";
+export const CHANNEL_ORDER: Channel[] = ["Direct", "Search", "Social", "AI assistants", "Email", "Referral"];
+
+const AI = /(^|\.)(chatgpt\.com|chat\.openai\.com|openai\.com|perplexity\.ai|claude\.ai|gemini\.google\.com|bard\.google\.com|copilot\.microsoft\.com|you\.com|phind\.com|poe\.com|meta\.ai|chat\.deepseek\.com|deepseek\.com|grok\.com|chat\.mistral\.ai)$|^(chatgpt|perplexity|claude|gemini|copilot|deepseek|grok)$/i;
+const SEARCH = /(^|\.)(google\.[a-z.]+|bing\.com|duckduckgo\.com|search\.yahoo\.com|yahoo\.com|yandex\.[a-z]+|baidu\.com|ecosia\.org|search\.brave\.com|startpage\.com|qwant\.com|kagi\.com|naver\.com)$|^(google|bing|duckduckgo|yahoo!?|yandex|baidu|ecosia|brave|startpage|qwant|kagi|naver)$/i;
+const SOCIAL = /(^|\.)(x\.com|twitter\.com|t\.co|facebook\.com|fb\.com|m\.facebook\.com|l\.facebook\.com|instagram\.com|linkedin\.com|lnkd\.in|reddit\.com|news\.ycombinator\.com|youtube\.com|tiktok\.com|pinterest\.[a-z.]+|threads\.net|bsky\.app|mastodon\.social|discord\.com|t\.me|telegram\.org|whatsapp\.com|lobste\.rs|producthunt\.com|dev\.to|medium\.com|substack\.com)$|^(twitter|x|facebook|instagram|linkedin|reddit|hacker news|youtube|tiktok|pinterest|threads|bluesky|mastodon|discord|telegram|whatsapp|product hunt)$/i;
+const EMAIL = /(^|\.)(mail\.google\.com|outlook\.live\.com|outlook\.office\.com|mail\.yahoo\.com|mail\.proton\.me)$|newsletter|^email$|^(gmail|outlook)$/i;
+
+export function channelOf(key: string): Channel {
+  const k = key.trim().toLowerCase();
+  if (!k || k === "(direct)") return "Direct";
+  if (AI.test(k)) return "AI assistants";
+  if (EMAIL.test(k)) return "Email";
+  if (SEARCH.test(k)) return "Search";
+  if (SOCIAL.test(k)) return "Social";
+  return "Referral";
+}
+
+export function channels(items: { key: string; visitors: number }[]): { channel: Channel; visitors: number; top: string }[] {
+  const by = new Map<Channel, { visitors: number; top: string; topV: number }>();
+  for (const i of items) {
+    if (i.key === "Others") continue;
+    const c = channelOf(i.key);
+    const e = by.get(c) ?? { visitors: 0, top: i.key, topV: -1 };
+    e.visitors += i.visitors;
+    if (i.visitors > e.topV) { e.top = i.key; e.topV = i.visitors; }
+    by.set(c, e);
+  }
+  return [...by.entries()].map(([channel, e]) => ({ channel, visitors: e.visitors, top: e.top })).sort((a, b) => b.visitors - a.visitors);
+}
+
+/* ---------------- by the numbers ---------------- */
+
+export type NumberStat = { label: string; value: string; foot: string };
+
+/** Figures a 30-day dashboard can't give you, computed from every day kept. */
+export function byTheNumbers(daily: MetricRow[], monthly: MonthRow[]): NumberStat[] {
+  const today = daysAgo(0);
+  const days = daily.filter((d) => d.date < today && d.visitors != null) as (MetricRow & { visitors: number })[];
+  if (!days.length && !monthly.length) return [];
+  const out: NumberStat[] = [];
+  const lifetime = monthly.reduce((a, m) => a + (m.visitors ?? 0), 0);
+  const lifePv = monthly.reduce((a, m) => a + (m.pageviews ?? 0), 0);
+  out.push({ label: "Visitors kept, all time", value: n0(lifetime), foot: monthly.length ? `since ${monthLabel(monthly[0].month)}` : "" });
+  if (lifePv) out.push({ label: "Page views kept", value: n0(lifePv), foot: lifetime ? `${(lifePv / lifetime).toFixed(2)} per visitor` : "" });
+  if (days.length >= 7) {
+    const vals = days.map((d) => d.visitors);
+    out.push({ label: "Typical day", value: n0(median(vals)), foot: `median of ${n0(days.length)} days · average ${n0(vals.reduce((a, b) => a + b, 0) / vals.length)}` });
+    const best = days.reduce((m, d) => (d.visitors > m.visitors ? d : m));
+    out.push({ label: "Best day", value: n0(best.visitors), foot: `${longDay(best.date)}, ${best.date.slice(0, 4)}` });
+    const quiet = days.filter((d) => d.visitors === 0).length;
+    out.push({ label: "Days with traffic", value: `${Math.round(((days.length - quiet) / days.length) * 100)}%`, foot: quiet ? `${n0(quiet)} days with no visitors` : "every kept day had visitors" });
+  }
+  const fullMonths = monthly.filter((m) => m.month < today.slice(0, 7) && m.visitors != null && (m.granularity === "month" || m.days >= lmDays(m.month) - 1));
+  if (fullMonths.length >= 2) {
+    const best = fullMonths.reduce((a, b) => ((b.visitors ?? 0) > (a.visitors ?? 0) ? b : a));
+    out.push({ label: "Best month", value: n0(best.visitors ?? 0), foot: monthFull(best.month) });
+    const recent = fullMonths.slice(-7);
+    const first = recent[0].visitors ?? 0, last = recent.at(-1)!.visitors ?? 0;
+    if (recent.length >= 3 && first > 0 && last > 0) {
+      const g = (Math.pow(last / first, 1 / (recent.length - 1)) - 1) * 100;
+      out.push({ label: "Monthly growth", value: `${g >= 0 ? "+" : ""}${g.toFixed(1)}%`, foot: `compounded over the last ${recent.length - 1} full months` });
+    }
+  }
+  const bounce = days.filter((d) => d.bounce_rate != null).slice(-30);
+  if (bounce.length >= 7) out.push({ label: "Bounce rate, 30 days", value: `${(bounce.reduce((a, d) => a + d.bounce_rate!, 0) / bounce.length).toFixed(1)}%`, foot: "share of one-page visits" });
   return out;
+}
+
+/** Median visitors by weekday over the last 12 weeks (Mon first), or null if under 3 weeks. */
+export function weekdayProfile(daily: MetricRow[]): { label: string; value: number }[] | null {
+  const today = daysAgo(0);
+  const days = daily.filter((d) => d.date < today && d.visitors != null).slice(-84);
+  if (days.length < 21) return null;
+  const by: number[][] = [[], [], [], [], [], [], []];
+  days.forEach((d) => by[new Date(d.date + "T00:00:00Z").getUTCDay()].push(d.visitors!));
+  return [1, 2, 3, 4, 5, 6, 0].map((i) => ({ label: WEEKDAYS[i].slice(0, 3), value: median(by[i]) }));
 }

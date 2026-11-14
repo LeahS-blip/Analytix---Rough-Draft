@@ -6,7 +6,7 @@ import type { DashProps } from "./Dashboard";
 import { useUi } from "./Dashboard";
 import { CoverageGrid, LineChart, Sparkline } from "./charts";
 import { fmt, monthFull, monthLabel } from "./client";
-import { buildSeries, insights, kpis, shiftMonth, type Insight, type Range } from "./stats";
+import { buildSeries, byTheNumbers, CHANNEL_ORDER, channels, insights, kpis, shiftMonth, weekdayProfile, type Channel, type Insight, type Range } from "./stats";
 
 const RANGE_TEXT: Record<Range, string> = { "30d": "last 30 days", "6m": "last 6 months", "1y": "last 12 months", all: "all time" };
 
@@ -16,11 +16,11 @@ function EmptyState({ siteId }: { siteId: number }) {
     <div className="card empty">
       <h3>Nothing kept yet</h3>
       <p>
-        Connect Vercel to start daily snapshots (and backfill whatever Vercel still remembers), or drop in a CSV / JSON export
-        to bring in your older history right now.
+        Connect Vercel, Plausible, Umami, Cloudflare, Google Analytics, GitHub or your own script to start daily snapshots (and
+        backfill whatever the provider still remembers), or drop in a CSV / JSON export to bring in older history right now.
       </p>
       <div className="actions">
-        <button className="btn primary" onClick={openAddSource}>Connect Vercel</button>
+        <button className="btn primary" onClick={openAddSource}>Add a source</button>
         <Link className="btn" href={`/app/${siteId}/import`}>Import a file</Link>
       </div>
     </div>
@@ -231,6 +231,7 @@ export function TrendsView({ site, daily, monthly, range }: DashProps & { range:
   return (
     <>
       <p className="view-intro">Your full kept history. Use the range control above to zoom, and toggle the prior-year overlay to compare like-for-like.</p>
+      <NumbersCard daily={daily} monthly={monthly} />
       <div className="card">
         <div className="card-head">
           <div>
@@ -352,12 +353,20 @@ const INSIGHT_TAG: Record<Insight["kind"], string> = {
   record: "record",
   rising: "pages",
   source: "referrers",
+  ai: "AI",
+  channel: "channels",
+  newref: "new source",
+  projection: "forecast",
+  yoy: "vs last year",
+  streak: "streak",
+  bounce: "engagement",
+  growth: "record",
 };
 
 function InsightList({ items }: { items: Insight[] }) {
   return (
     <ul className="insights">
-      {items.slice(0, 7).map((i) => (
+      {items.slice(0, 8).map((i) => (
         <li key={i.title} className={`ins ins-${i.kind}`}>
           <span className="ins-tag">{INSIGHT_TAG[i.kind]}</span>
           <div>
@@ -402,7 +411,7 @@ function BreakdownCard({ breakdown }: { breakdown: DashProps["breakdown"] }) {
           <h3>Where your visitors came from</h3>
           <div className="sub">
             {has
-              ? `Kept since ${new Date(breakdown.from + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })} · Vercel only shows its own window`
+              ? `Kept since ${new Date(breakdown.from + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })} · your provider only shows its own window`
               : "Top pages, referrers, countries and devices"}
           </div>
         </div>
@@ -415,10 +424,12 @@ function BreakdownCard({ breakdown }: { breakdown: DashProps["breakdown"] }) {
       </div>
       {!has ? (
         <p className="muted small" style={{ margin: "8px 0 0" }}>
-          These start filling in with your next Vercel snapshot (press <b>Fetch now</b> on Sources to start right away). From then on
-          KeepStat saves them every day, so you&apos;ll still have them after Vercel stops showing them. CSV imports don&apos;t include them.
+          These start filling in with your next snapshot (press <b>Fetch now</b> on Sources to start right away). From then on
+          KeepStat saves them every day, so you&apos;ll still have them after your provider stops showing them. CSV imports don&apos;t include them.
         </p>
       ) : (
+        <>
+        <ChannelBar items={breakdown.dims.referrerHostname?.[scope] ?? []} />
         <div className="bd-grid">
           {DIM_INFO.map((d) => {
             const items = (breakdown.dims[d.key]?.[scope] ?? []).filter((i) => i[d.metric] > 0).slice(0, 6);
@@ -448,7 +459,89 @@ function BreakdownCard({ breakdown }: { breakdown: DashProps["breakdown"] }) {
             );
           })}
         </div>
+        </>
       )}
     </div>
+  );
+}
+
+const CHANNEL_COLOR: Record<Channel, string> = {
+  Direct: "var(--ink)",
+  Search: "var(--accent)",
+  Social: "#3A7BD5",
+  "AI assistants": "#8E5BD9",
+  Email: "#2B9348",
+  Referral: "var(--ghost)",
+};
+
+function ChannelBar({ items }: { items: { key: string; visitors: number }[] }) {
+  const ch = channels(items).filter((c) => c.visitors > 0);
+  const total = ch.reduce((s, c) => s + c.visitors, 0);
+  if (!total) return null;
+  const sorted = CHANNEL_ORDER.map((n) => ch.find((c) => c.channel === n)).filter(Boolean) as typeof ch;
+  return (
+    <div className="chan" aria-label="Visitors by channel">
+      <div className="chan-bar">
+        {sorted.map((c) => (
+          <span key={c.channel} title={`${c.channel}: ${fmt(c.visitors)} (top: ${c.top})`} style={{ width: `${(c.visitors / total) * 100}%`, background: CHANNEL_COLOR[c.channel] }} />
+        ))}
+      </div>
+      <div className="chan-leg">
+        {sorted.map((c) => (
+          <span key={c.channel} title={`Top: ${c.top}`}>
+            <i style={{ background: CHANNEL_COLOR[c.channel] }} />
+            {c.channel}
+            <b>{Math.round((c.visitors / total) * 100) || "<1"}%</b>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function NumbersCard({ daily, monthly }: { daily: DashProps["daily"]; monthly: DashProps["monthly"] }) {
+  const stats = useMemo(() => byTheNumbers(daily, monthly), [daily, monthly]);
+  const week = useMemo(() => weekdayProfile(daily), [daily]);
+  if (!stats.length) return null;
+  const max = week ? Math.max(1, ...week.map((w) => w.value)) : 1;
+  return (
+    <>
+      <div className="card">
+        <div className="card-head">
+          <div>
+            <h3>By the numbers</h3>
+            <div className="sub">From every day you&apos;ve kept, not just the provider&apos;s window</div>
+          </div>
+        </div>
+        <div className="nums">
+          {stats.map((s) => (
+            <div className="num-cell" key={s.label}>
+              <div className="nl">{s.label}</div>
+              <div className="nv">{s.value}</div>
+              <div className="nf">{s.foot}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      {week && (
+        <div className="card">
+          <div className="card-head">
+            <div>
+              <h3>Your week</h3>
+              <div className="sub">Typical visitors by weekday (median, last 12 weeks), so one viral day doesn&apos;t skew it</div>
+            </div>
+          </div>
+          <div className="wk">
+            {week.map((w) => (
+              <div key={w.label}>
+                <span className="wv">{fmt(w.value)}</span>
+                <span className={`bar${w.value === max ? " top" : ""}`} style={{ height: `${(w.value / max) * 100}%` }} />
+                <span className="wl">{w.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
   );
 }

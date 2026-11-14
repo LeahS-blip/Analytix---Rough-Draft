@@ -39,14 +39,21 @@ Old prototype links (`/Analytix/index.html`) redirect to `/`.
 | Accounts | Email + password (scrypt), 30-day httpOnly session cookie |
 | Sites | Create, switch, rename, set time zone, delete |
 | CSV / JSON import | Auto-detects date, visitors, page views, bounce columns; handles messy dates (`Jun '26`, `8/26`, ISO, US/EU), `15.2k`, `1,234`, `42%`; daily or monthly rows; preview before saving; original file kept as a receipt |
-| Vercel | Paste an access token → pick a project → backfills what Vercel still has (tries 2y → 1y → 90d → 30d) → refetches the last 35 days daily. Token is AES-256-GCM encrypted at rest. Uses the official Web Analytics API (`/v1/query/web-analytics/visits/aggregate`). |
+| Sources | Backfill what the provider still has, then refetch recent days daily. Credentials are AES-256-GCM encrypted at rest. Each also keeps top pages, referrers, countries and devices per day (`src/lib/providers/`). |
+| · Vercel | Access token → project. Web Analytics API; learns the plan limit (Hobby: 31 days). |
+| · Plausible | Stats API v2 key + site domain (plausible.io or self-hosted). Full history, with bounce rate. |
+| · Umami | Cloud API key, or self-hosted address + login → website. Full history. |
+| · Cloudflare | API token (Account Analytics: Read) → Web Analytics site. GraphQL, read a month at a time; ~6 months available. |
+| · Google Analytics 4 | Service account JSON key (added to the property as Viewer) → property. Data API; users, page views, bounce rate. |
+| · GitHub | Token → repo. Traffic views + popular pages/referrers; GitHub keeps only 14 days, stored as non-overlapping 14-day blocks. |
+| · Push API | `POST /api/ingest` with `Authorization: Bearer ks_…` and `{date, visitors, pageviews, bounce_rate, pages, referrers, countries, devices}` or `{rows:[…]}`. Only a SHA-256 of the key is stored. |
 | Daily snapshots | Vercel Cron in production; an hourly in-process check when running on your own machine. Pause/resume, "Fetch now", per-run log with errors. |
-| Dashboard | Overview, Trends, History, Snapshots log, Import, Sources, Settings, light/dark |
+| Dashboard | Overview (KPIs, history chart, insights, channels, breakdowns), Trends (by the numbers, weekday profile, year over year), History, Snapshots log, Import, Sources, Settings, light/dark |
+| Insights | Spikes and who caused them, week over week, month-end forecast, year over year, new referrers, AI-assistant traffic, channel mix, growth streaks, bounce change, best month, weekday pattern, records |
 | Export | Monthly or daily CSV download |
 
 **Not built yet** (shown as "soon" in the UI): screenshot→AI import, Ask AI, Timeline/milestones,
-Reports, Google Analytics / Cloudflare / Plausible / Umami / Stripe connectors, billing/plan limits,
-password reset, email.
+Reports, Stripe, billing/plan limits, password reset, email.
 
 ## Configuration
 
@@ -63,16 +70,18 @@ password reset, email.
 ```bash
 node scripts/test-postgres-driver.mjs   # production Postgres driver path, against an in-memory Postgres
 node scripts/test-vercel-plan-limit.mjs # fetches shrink to the Vercel plan's allowed range (Hobby: 31 days)
-node scripts/mock-vercel.mjs            # local stand-in for Vercel's API (Hobby-shaped data with a spike);
-                                        # set KEEPSTAT_VERCEL_API=http://127.0.0.1:5099 in .env.local and
-                                        # connect with the token "local-test-token" to try the full flow
+node scripts/mock-providers.mjs         # local stand-ins for every provider's API (port 5099); the
+                                        # KEEPSTAT_*_API lines to put in .env.local are at the top of the file
+node scripts/e2e-providers.mjs          # with the mock + `npm run dev` running: connects every provider,
+                                        # refetches, checks bad keys and the push API
 ```
 
 ## Layout
 
 ```
 src/lib/        db (schema + Postgres/PGlite), auth, data access, parseImport, vercel client, snapshots
-src/app/api/    route handlers (auth, sites, import, export, sources, vercel, cron)
+src/lib/providers/  one file per connector (plausible, umami, cloudflare, ga4, github) + shared types
+src/app/api/    route handlers (auth, sites, import, export, sources, connect, ingest, vercel, cron)
 src/app/app/    dashboard pages  →  src/components/ (Dashboard shell, views, charts)
 public/landing.html   marketing page
 vercel.json     daily cron

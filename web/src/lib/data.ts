@@ -229,6 +229,8 @@ export type BreakdownSummary = {
   dims: Record<string, { all: BreakdownItem[]; recent: BreakdownItem[]; prior: BreakdownItem[] }>;
   /** per day: the referrer that sent the most visitors (ignores direct traffic), with its share of the day */
   topReferrerByDay: Record<string, { key: string; share: number }>;
+  /** referrers first seen in the last 30 days, when there's at least 30 days of history before that */
+  newReferrers: { key: string; visitors: number; first: string }[];
 };
 
 const isoDaysAgo = (n: number) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
@@ -236,7 +238,7 @@ const isoDaysAgo = (n: number) => new Date(Date.now() - n * 864e5).toISOString()
 export async function breakdownSummary(siteId: number): Promise<BreakdownSummary> {
   const recentFrom = isoDaysAgo(30);
   const priorFrom = isoDaysAgo(60);
-  const [rows, refs, span] = await Promise.all([
+  const [rows, refs, span, fresh] = await Promise.all([
     q<{ dimension: string; key: string; v_all: number; pv_all: number; v_recent: number | null; pv_recent: number | null; v_prior: number | null; pv_prior: number | null }>(
       `SELECT dimension, key,
               SUM(visitors)::int AS v_all, SUM(pageviews)::int AS pv_all,
@@ -262,10 +264,18 @@ export async function breakdownSummary(siteId: number): Promise<BreakdownSummary
       `SELECT MIN(date_from) AS "from", MAX(date_to) AS "to" FROM breakdowns WHERE site_id = $1`,
       [siteId]
     ),
+    q<{ key: string; visitors: number; first: string }>(
+      `SELECT key, SUM(visitors)::int AS visitors, MIN(date_from) AS first
+       FROM breakdowns WHERE site_id = $1 AND dimension = 'referrerHostname' AND key NOT IN ('(direct)', 'Others')
+         AND (SELECT MIN(date_from) FROM breakdowns WHERE site_id = $1) <= $3
+       GROUP BY key HAVING MIN(date_from) >= $2
+       ORDER BY 2 DESC LIMIT 5`,
+      [siteId, recentFrom, priorFrom]
+    ),
   ]);
 
   const dims: BreakdownSummary["dims"] = {};
-  const top = (items: BreakdownItem[]) => items.filter((i) => i.visitors > 0 || i.pageviews > 0).sort((a, b) => b.pageviews - a.pageviews || b.visitors - a.visitors).slice(0, 12);
+  const top = (items: BreakdownItem[]) => items.filter((i) => i.visitors > 0 || i.pageviews > 0).sort((a, b) => b.pageviews - a.pageviews || b.visitors - a.visitors).slice(0, 40);
   for (const d of new Set(rows.map((r) => r.dimension))) {
     const rs = rows.filter((r) => r.dimension === d);
     dims[d] = {
@@ -276,5 +286,5 @@ export async function breakdownSummary(siteId: number): Promise<BreakdownSummary
   }
   const topReferrerByDay: BreakdownSummary["topReferrerByDay"] = {};
   for (const r of refs) if (r.total > 0) topReferrerByDay[r.day] = { key: r.key, share: r.visitors / r.total };
-  return { from: span?.from ?? null, to: span?.to ?? null, dims, topReferrerByDay };
+  return { from: span?.from ?? null, to: span?.to ?? null, dims, topReferrerByDay, newReferrers: fresh };
 }

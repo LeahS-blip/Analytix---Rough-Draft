@@ -82,7 +82,7 @@ export function NewSiteForm({ first = false, onDone }: { first?: boolean; onDone
           <span className="wordmark">Keep<span className="wm-accent">Stat</span></span>
         </div>
         <h1>Add your first site</h1>
-        <p className="lead">Next you&apos;ll connect Vercel or drop in an export — KeepStat keeps every day from then on.</p>
+        <p className="lead">Next you&apos;ll connect a source (Vercel, Plausible, Umami, Cloudflare, Google Analytics, GitHub) or drop in an export — KeepStat keeps every day from then on.</p>
         {form}
       </div>
     </main>

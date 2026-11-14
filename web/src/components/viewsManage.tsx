@@ -8,6 +8,7 @@ import { applyTheme, Modal, useUi } from "./Dashboard";
 import { CoverageGrid } from "./charts";
 import { ago, api, dayLabel, fmt, monthLabel, postJson, stamp } from "./client";
 import { TIMEZONES } from "./NewSiteForm";
+import { PROVIDER_UI, providerColor, providerUi } from "./providers";
 
 /* ---------------- snapshots ---------------- */
 
@@ -15,7 +16,7 @@ export function SnapshotsView({ site, daily, snapshots, sources }: DashProps) {
   const { toast, refresh, openAddSource } = useUi();
   const [busy, setBusy] = useState(false);
   const coverage = useMemo(() => new Map(daily.map((d) => [d.date, d.visitors])), [daily]);
-  const live = sources.filter((s) => s.active);
+  const live = sources.filter((s) => s.active && s.kind !== "push");
 
   async function captureNow() {
     if (!live.length) return openAddSource();
@@ -79,7 +80,7 @@ export function SnapshotsView({ site, daily, snapshots, sources }: DashProps) {
                 {snapshots.map((s) => (
                   <tr key={s.id}>
                     <td className="mono" style={{ fontSize: 12 }}>{stamp(s.created_at)}</td>
-                    <td className="wrap">{s.kind === "vercel" ? s.label : `${s.kind.toUpperCase()} · ${s.label}`}</td>
+                    <td className="wrap">{providerUi(s.kind) ? s.label : `${s.kind.toUpperCase()} · ${s.label}`}</td>
                     <td className="mono small">{s.range_from ? `${s.range_from} → ${s.range_to}` : "—"}</td>
                     <td className="num">{fmt(s.rows)}</td>
                     <td className="num">{fmt(s.visitors)}</td>
@@ -147,8 +148,8 @@ export function ImportView({ site }: DashProps) {
         <div className="imp">
           <div className="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12h6M12 9v6" /><rect x="3" y="4" width="18" height="16" rx="3" /></svg></div>
           <h3>Connect a source</h3>
-          <p>Link Vercel Web Analytics. KeepStat backfills what Vercel still has, then fetches a snapshot every day.</p>
-          <button className="btn primary" onClick={openAddSource}>Connect Vercel</button>
+          <p>Vercel, Plausible, Umami, Cloudflare, Google Analytics, GitHub, or your own script. KeepStat backfills what it can, then saves a snapshot every day.</p>
+          <button className="btn primary" onClick={openAddSource}>Add a source</button>
         </div>
         <div className="imp">
           <div className="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 15V3M8 7l4-4 4 4" /><path d="M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4" /></svg></div>
@@ -314,17 +315,24 @@ export function SourcesView({ sources }: DashProps) {
               const failing = !!s.last_error;
               return (
                 <div className="conn" key={s.id}>
-                  <span className="cd" style={{ background: "#111317" }} />
+                  <span className="cd" style={{ background: providerColor(s.kind) }} />
                   <div className="info">
                     <div className="n">{s.label}</div>
-                    <div className="s">last fetched {ago(s.last_success_at)} · added {stamp(s.created_at)}</div>
+                    <div className="s">
+                      {s.kind === "push"
+                        ? s.last_success_at ? `last push ${ago(s.last_success_at)}` : "waiting for the first push"
+                        : `last fetched ${ago(s.last_success_at)}`}{" "}
+                      · added {stamp(s.created_at)}
+                    </div>
                     {failing && <div className="e">{s.last_error}</div>}
                   </div>
                   <span className={`status ${!s.active ? "off" : failing ? "err" : "on"}`}>{!s.active ? "paused" : failing ? "● error" : "● live"}</span>
                   <div className="actions">
-                    <button className="btn sm ghost" onClick={() => run(s.id)} disabled={busyId === s.id}>
-                      {busyId === s.id ? <span className="spin" /> : "Fetch now"}
-                    </button>
+                    {s.kind !== "push" && (
+                      <button className="btn sm ghost" onClick={() => run(s.id)} disabled={busyId === s.id}>
+                        {busyId === s.id ? <span className="spin" /> : "Fetch now"}
+                      </button>
+                    )}
                     <button className="btn sm ghost" onClick={() => toggle(s.id, !s.active)}>{s.active ? "Pause" : "Resume"}</button>
                     <button className="btn sm ghost danger" onClick={() => remove(s.id, s.label)}>Disconnect</button>
                   </div>
@@ -339,11 +347,11 @@ export function SourcesView({ sources }: DashProps) {
             </div>
             <div>
               <h4>No live source yet</h4>
-              <p>Connect Vercel and KeepStat backfills whatever your Vercel plan still shows, then saves a snapshot every day, so nothing drops out of view.</p>
+              <p>Connect where your stats live. KeepStat backfills whatever the provider still shows, then saves a snapshot every day, so nothing drops out of view.</p>
               <div className="src-chips">
-                <button className="btn primary sm" onClick={openAddSource}>Connect Vercel</button>
-                {["Google Analytics", "Cloudflare", "Plausible", "Umami"].map((n) => (
-                  <span key={n} className="pchip faint">{n} · soon</span>
+                <button className="btn primary sm" onClick={openAddSource}>Add a source</button>
+                {PROVIDER_UI.map((p) => (
+                  <span key={p.kind} className="pchip faint">{p.name}</span>
                 ))}
               </div>
             </div>
@@ -354,112 +362,181 @@ export function SourcesView({ sources }: DashProps) {
   );
 }
 
-type Project = { projectId: string; name: string; teamId: string | null; teamName: string };
+type Choice = { id: string; label: string; sub?: string };
 
-export function AddSourceModal({ siteId }: { siteId: number }) {
-  const { toast, refresh, closeModal } = useUi();
+export function AddSourceModal({ siteId, initial }: { siteId: number; initial?: string }) {
+  const { toast, refresh, closeModal, openModal } = useUi();
   const router = useRouter();
-  const [step, setStep] = useState<"pick" | "vercel">("pick");
-  const [token, setToken] = useState("");
-  const [projects, setProjects] = useState<Project[] | null>(null);
-  const [chosen, setChosen] = useState<Project | null>(null);
+  const [kind, setKind] = useState<string | null>(initial ?? null);
+  const [fields, setFields] = useState<Record<string, string>>({});
+  const [choices, setChoices] = useState<Choice[] | null>(null);
+  const [chosen, setChosen] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const ui = kind ? providerUi(kind) : null;
 
-  const OTHERS = [
-    { n: "Google Analytics", c: "#F6821F" },
-    { n: "Cloudflare", c: "#F38020" },
-    { n: "Plausible", c: "#5850EC" },
-    { n: "Umami", c: "#2B9348" },
-    { n: "Stripe", c: "#635BFF" },
-  ];
+  function reset(k: string | null) {
+    setKind(k);
+    setFields({});
+    setChoices(null);
+    setChosen(null);
+    setError(null);
+  }
 
-  async function findProjects(e: React.FormEvent) {
+  const filled = !!ui && ui.fields.every((f) => f.optional || (fields[f.name] ?? "").trim());
+
+  async function find(e: React.FormEvent) {
     e.preventDefault();
+    if (!ui) return;
+    if (!ui.pick) return connect();
     setBusy(true);
     setError(null);
-    const r = await postJson<{ projects: Project[] }>("/api/vercel/projects", { token });
+    const r = await postJson<{ choices: Choice[] }>(`/api/connect/${ui.kind}/options`, { fields });
     setBusy(false);
     if ("error" in r) return setError(r.error);
-    setProjects(r.projects);
-    if (r.projects.length === 1) setChosen(r.projects[0]);
+    setChoices(r.choices);
+    if (r.choices.length === 1) setChosen(r.choices[0].id);
   }
 
   async function connect() {
-    if (!chosen) return;
+    if (!ui) return;
     setBusy(true);
     setError(null);
-    const r = await postJson<{ id: number; first: { ok: boolean; rows: number; error?: string } }>(`/api/sites/${siteId}/sources`, {
-      kind: "vercel",
-      token,
-      projectId: chosen.projectId,
-      projectName: chosen.name,
-      teamId: chosen.teamId,
+    const r = await postJson<{ id: number; key?: string; first: { ok: boolean; rows: number; error?: string } }>(`/api/sites/${siteId}/sources`, {
+      kind: ui.kind,
+      fields,
+      choice: chosen,
     });
     setBusy(false);
     if ("error" in r) return setError(r.error);
-    closeModal();
-    toast(r.first.ok ? `Vercel connected · backfilled ${r.first.rows} days` : `Connected, but the first fetch failed: ${r.first.error}`, r.first.ok ? "ok" : "error");
     refresh();
     router.push(`/app/${siteId}/sources`);
+    if (r.key) return openModal(<PushKeyModal keyValue={r.key} />);
+    closeModal();
+    toast(
+      r.first.ok ? `${ui.name} connected · ${r.first.rows} day${r.first.rows === 1 ? "" : "s"} saved` : `Connected, but the first fetch failed: ${r.first.error}`,
+      r.first.ok ? "ok" : "error"
+    );
   }
 
-  if (step === "pick")
+  if (!ui)
     return (
-      <Modal title="Add a source" desc="Pick a platform to connect. KeepStat fetches a daily snapshot automatically.">
+      <Modal title="Add a source" desc="Pick where your numbers live. KeepStat backfills what it can, then saves a snapshot every day.">
         <div className="source-grid">
-          <button className="source-opt" onClick={() => setStep("vercel")}>
-            <span className="cd" style={{ background: "#111317" }} />
-            <span><span className="n">Vercel</span><br /><span className="s">Web Analytics</span></span>
-          </button>
-          {OTHERS.map((o) => (
-            <button className="source-opt" key={o.n} disabled>
-              <span className="cd" style={{ background: o.c }} />
-              <span><span className="n">{o.n}</span><br /><span className="s">coming soon</span></span>
+          {PROVIDER_UI.map((o) => (
+            <button className="source-opt" key={o.kind} onClick={() => reset(o.kind)}>
+              <span className="cd" style={{ background: o.color }} />
+              <span><span className="n">{o.name}</span><br /><span className="s">{o.sub}</span></span>
             </button>
           ))}
         </div>
-        <p className="muted small" style={{ marginTop: 14 }}>Using something else today? Export a CSV from it and use Import.</p>
+        <p className="muted small" style={{ marginTop: 14 }}>Have an export instead? Use Import for a one-time CSV or JSON backfill.</p>
       </Modal>
     );
 
   return (
-    <Modal title="Connect Vercel" desc="KeepStat reads daily visitors and page views from Vercel Web Analytics.">
+    <Modal title={`Connect ${ui.name}`} desc={ui.keeps}>
       <ol className="steps-mini">
-        <li>Make sure Web Analytics is enabled on the project.</li>
-        <li>
-          Create a token at{" "}
-          <a href="https://vercel.com/account/settings/tokens" target="_blank" rel="noreferrer">vercel.com/account/settings/tokens</a>{" "}
-          with access to that project&apos;s team.
-        </li>
-        <li>Paste it below — it&apos;s encrypted before it&apos;s stored.</li>
+        {ui.steps.map((s) => (
+          <li key={s.text}>
+            {s.text}
+            {s.href && <> <a href={s.href} target="_blank" rel="noreferrer">{s.link}</a></>}
+          </li>
+        ))}
+        {ui.kind !== "push" && <li>Credentials are encrypted before they&apos;re stored, and only used to read your stats.</li>}
       </ol>
       {error && <div className="err" role="alert">{error}</div>}
-      <form onSubmit={findProjects} className="field">
-        <label htmlFor="vtoken">Access token</label>
-        <div style={{ display: "flex", gap: 8 }}>
-          <input id="vtoken" type="password" autoComplete="off" className="input" value={token} onChange={(e) => { setToken(e.target.value); setProjects(null); setChosen(null); }} autoFocus />
-          <button className="btn" type="submit" disabled={busy || !token.trim()}>{busy && !projects ? <span className="spin" /> : "Find projects"}</button>
-        </div>
+      <form onSubmit={find}>
+        {ui.fields.map((f, i) => (
+          <div className="field" key={f.name}>
+            <label htmlFor={`f-${f.name}`}>
+              {f.label}
+              {f.optional && <span className="faint"> · optional</span>}
+            </label>
+            {f.type === "textarea" ? (
+              <textarea
+                id={`f-${f.name}`}
+                className="input mono"
+                rows={5}
+                spellCheck={false}
+                placeholder={f.placeholder}
+                value={fields[f.name] ?? ""}
+                onChange={(e) => { setFields({ ...fields, [f.name]: e.target.value }); setChoices(null); setChosen(null); }}
+                autoFocus={i === 0}
+              />
+            ) : (
+              <input
+                id={`f-${f.name}`}
+                className="input"
+                type={f.type === "password" ? "password" : f.type === "url" ? "url" : "text"}
+                autoComplete="off"
+                placeholder={f.placeholder}
+                value={fields[f.name] ?? ""}
+                onChange={(e) => { setFields({ ...fields, [f.name]: e.target.value }); setChoices(null); setChosen(null); }}
+                autoFocus={i === 0}
+              />
+            )}
+            {f.help && <div className="faint small" style={{ marginTop: 4 }}>{f.help}</div>}
+          </div>
+        ))}
+        {ui.pick && !choices && (
+          <button className="btn" type="submit" disabled={busy || !filled}>
+            {busy ? <span className="spin" /> : `Find ${ui.pick.toLowerCase().replace(/y$/, "ie")}s`}
+          </button>
+        )}
       </form>
-      {projects && (
+      {choices && (
         <div className="field">
-          <label>Project</label>
+          <label>{ui.pick}</label>
           <div className="proj-list">
-            {projects.map((p) => (
-              <button key={p.projectId} type="button" className="proj" aria-pressed={chosen?.projectId === p.projectId} onClick={() => setChosen(p)}>
-                <span className="pn">{p.name}</span>
-                <span className="pt">{p.teamName}</span>
+            {choices.map((c) => (
+              <button key={c.id} type="button" className="proj" aria-pressed={chosen === c.id} onClick={() => setChosen(c.id)}>
+                <span className="pn">{c.label}</span>
+                {c.sub && <span className="pt">{c.sub}</span>}
               </button>
             ))}
           </div>
         </div>
       )}
       <div className="modal-actions">
-        <button className="btn" onClick={() => setStep("pick")}>Back</button>
-        <button className="btn primary" onClick={connect} disabled={!chosen || busy}>
-          {busy && projects ? <><span className="spin" /> Backfilling…</> : "Connect & backfill"}
+        <button className="btn" onClick={() => reset(null)}>Back</button>
+        <button className="btn primary" onClick={connect} disabled={busy || !filled || (!!ui.pick && !chosen)}>
+          {busy && (choices || !ui.pick) ? <><span className="spin" /> {ui.kind === "push" ? "Creating…" : "Backfilling…"}</> : ui.kind === "push" ? "Create key" : "Connect & backfill"}
         </button>
+      </div>
+    </Modal>
+  );
+}
+
+function PushKeyModal({ keyValue }: { keyValue: string }) {
+  const { closeModal, toast } = useUi();
+  const origin = typeof window === "undefined" ? "https://keepstat.vercel.app" : window.location.origin;
+  const curl = `curl -X POST ${origin}/api/ingest \\
+  -H "Authorization: Bearer ${keyValue}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"date":"${new Date().toISOString().slice(0, 10)}","visitors":120,"pageviews":310,
+       "pages":[{"key":"/","visitors":80,"pageviews":150}],
+       "referrers":[{"key":"google.com","visitors":30}]}'`;
+  return (
+    <Modal title="Your push key" desc="Copy it now. KeepStat stores only a fingerprint of it, so it can't be shown again.">
+      <div className="field">
+        <label>Key</label>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input className="input mono" readOnly value={keyValue} onFocus={(e) => e.target.select()} />
+          <button className="btn" onClick={() => navigator.clipboard?.writeText(keyValue).then(() => toast("Key copied"))}>Copy</button>
+        </div>
+      </div>
+      <div className="field">
+        <label>Send a day (from any script or cron job)</label>
+        <pre className="code-block">{curl}</pre>
+        <div className="faint small" style={{ marginTop: 6 }}>
+          Send <code>{"{ rows: [...] }"}</code> for many days at once (up to 5,000). Sending a date again replaces it. <code>pages</code>,{" "}
+          <code>referrers</code>, <code>countries</code> (2-letter codes) and <code>devices</code> are optional.
+        </div>
+      </div>
+      <div className="modal-actions">
+        <button className="btn" onClick={() => navigator.clipboard?.writeText(curl).then(() => toast("Example copied"))}>Copy example</button>
+        <button className="btn primary" onClick={closeModal}>Done</button>
       </div>
     </Modal>
   );
