@@ -9,6 +9,13 @@ type Ctx = { params: Promise<{ siteId: string }> };
 // Reading an image takes a few seconds to ~a minute.
 export const maxDuration = 120;
 
+/** GET → { ai } : whether screenshots can be read by AI here (otherwise the browser uses text recognition). */
+export const GET = handle(async (_req: Request, ctx: Ctx) => {
+  const user = await apiUser();
+  await getSite(user.id, int((await ctx.params).siteId));
+  return NextResponse.json({ ai: !!process.env.ANTHROPIC_API_KEY });
+});
+
 /**
  * POST { image: base64, mediaType } → { csv, filename, notes, method, provider }.
  * Nothing is saved here: the client sends the CSV through the normal import preview, so the

@@ -38,7 +38,7 @@ Old prototype links (`/Analytix/index.html`) redirect to `/`.
 | Landing page (`/`) | Marketing page; every "Start free" goes to sign-up |
 | Accounts | Email + password (scrypt), 30-day httpOnly session cookie |
 | Sites | Create, switch, rename, set time zone, delete |
-| Screenshot import | Drop, pick or paste (Ctrl+V) a screenshot of any dashboard. Claude (`claude-opus-5-5`, structured output) reads the dated numbers; they go through the same preview as a CSV, so nothing is saved until you confirm. Charts without printed numbers are read off the axis and flagged as estimates. Needs `ANTHROPIC_API_KEY`. |
+| Screenshot import | Drop, pick or paste (Ctrl+V) a screenshot of any dashboard; the rows go through the same preview as a CSV, so nothing is saved until you confirm. **Without AI** (default): Tesseract text recognition runs in the browser (nothing uploaded); the image is upscaled, greyscaled, dark mode inverted and thresholded; each number is matched to the column heading above it, so a missed cell leaves a gap instead of shifting the row (`src/lib/ocrRows.ts`). Reads tables and lists, not chart lines. **With `ANTHROPIC_API_KEY`**: Claude (`claude-opus-5-5`, structured output) reads any dashboard, including charts (flagged as estimates); falls back to text recognition if the AI call fails. |
 | CSV / JSON import | Auto-detects date, visitors, page views, bounce columns; handles messy dates (`Jun '26`, `8/26`, ISO, US/EU), `15.2k`, `1,234`, `42%`; daily or monthly rows; preview before saving; original file kept as a receipt |
 | Sources | Backfill what the provider still has, then refetch recent days daily. Credentials are AES-256-GCM encrypted at rest. Each also keeps top pages, referrers, countries and devices per day (`src/lib/providers/`). |
 | · Vercel | Access token → project. Web Analytics API; learns the plan limit (Hobby: 31 days). |
@@ -63,7 +63,7 @@ Reports, Stripe, billing/plan limits, password reset, email.
 | `DATABASE_URL` | Postgres connection string (set by the Neon integration). Unset = local PGlite. |
 | `APP_SECRET` | Key for encrypting source tokens. If unset, a random key is generated once and stored in the database. |
 | `CRON_SECRET` | Required for `GET /api/cron` (`Authorization: Bearer <secret>`). |
-| `ANTHROPIC_API_KEY` | For screenshot import (from console.anthropic.com). Without it, screenshot import says it isn't set up; everything else works. |
+| `ANTHROPIC_API_KEY` | Optional. Lets screenshot import read charts and messy dashboards with AI. Without it, screenshots are read by text recognition in the browser. |
 | `KEEPSTAT_DATA_DIR` | Where local PGlite data lives (default `./data`). |
 | `KEEPSTAT_DISABLE_SCHEDULER=1` | Turn off the local hourly scheduler. |
 
@@ -72,6 +72,7 @@ Reports, Stripe, billing/plan limits, password reset, email.
 ```bash
 node scripts/test-postgres-driver.mjs   # production Postgres driver path, against an in-memory Postgres
 node scripts/test-vercel-plan-limit.mjs # fetches shrink to the Vercel plan's allowed range (Hobby: 31 days)
+node scripts/test-ocr-rows.mjs          # screenshot text → rows rules (dates, columns, OCR slips)
 node scripts/mock-providers.mjs         # local stand-ins for every provider's API (port 5099); the
                                         # KEEPSTAT_*_API lines to put in .env.local are at the top of the file
 node scripts/e2e-providers.mjs          # with the mock + `npm run dev` running: connects every provider,

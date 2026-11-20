@@ -135,6 +135,38 @@ export function ImportView({ site }: DashProps) {
     setBusy(false);
   }
 
+  // Can this server read screenshots with AI? If not, the browser reads them itself (text recognition).
+  const [aiReady, setAiReady] = useState<boolean | null>(null);
+  const [progress, setProgress] = useState<string | null>(null);
+  useEffect(() => {
+    api<{ ai: boolean }>(`/api/sites/${site.id}/import/screenshot`, "GET").then((r) => setAiReady("error" in r ? false : r.ai));
+  }, [site.id]);
+
+  async function readWithOcr(f: File, why?: string) {
+    setProgress("Reading text… 0%");
+    const [{ ocrImage }, { layoutToRows, textToRows, rowsToCsv }] = await Promise.all([import("./ocr"), import("@/lib/ocrRows")]);
+    const { text, lines } = await ocrImage(f, (p) => setProgress(`Reading text… ${Math.round(p * 100)}%`));
+    if (process.env.NODE_ENV !== "production") (window as unknown as { __ocr: unknown }).__ocr = { text, lines };
+    // line numbers up with their column headings when it can; plain text rules otherwise
+    const byLayout = layoutToRows(lines);
+    const byText = textToRows(text);
+    const found = byLayout.rows.length >= byText.rows.length ? byLayout : byText;
+    if (!found.rows.length)
+      return setError(
+        found.linesWithDates
+          ? "Found dates but no numbers next to them. Try a screenshot of just the table, with its column headings."
+          : "Couldn't find dated numbers in that screenshot. Without AI, KeepStat reads tables and lists of numbers, not chart lines: use the dashboard's table view, or export a CSV."
+      );
+    const cols = found.columns.map((c) => (c === "pageviews" ? "page views" : c === "bounce_rate" ? "bounce rate" : c)).join(", ");
+    setAiNote({
+      method: "ocr",
+      notes:
+        `${why ? why + " " : ""}Read ${found.rows.length} row${found.rows.length === 1 ? "" : "s"} with text recognition (no AI). ` +
+        (found.headerFound ? `Columns: ${cols}.` : "No column headings were found, so the first number is taken as visitors and the second as page views."),
+    });
+    await previewText("Screenshot (text recognition).csv", rowsToCsv(found.rows));
+  }
+
   async function loadShot(f: File) {
     setError(null);
     setPreview(null);
@@ -143,15 +175,22 @@ export function ImportView({ site }: DashProps) {
     if (!f.type.startsWith("image/")) return setError("Drop an image (PNG, JPEG or WebP) here, or use the CSV box for files.");
     setReading(true);
     try {
+      if (!aiReady) return await readWithOcr(f);
+      setProgress("Reading the numbers…");
       const img = await shrinkImage(f);
       const r = await postJson<{ csv: string; filename: string; notes: string; method: string }>(`/api/sites/${site.id}/import/screenshot`, img);
-      if ("error" in r) return setError(r.error);
+      if ("error" in r) {
+        // AI unavailable or failed: fall back to reading the text in the browser
+        if (/doesn't look like|No dated numbers|declined/.test(r.error)) return setError(r.error);
+        return await readWithOcr(f, "AI reading wasn't available, so");
+      }
       setAiNote({ notes: r.notes, method: r.method });
       await previewText(r.filename, r.csv);
     } catch {
-      setError("Couldn't open that image. Try a PNG or JPEG screenshot.");
+      setError("Couldn't read that image. Try a PNG or JPEG screenshot.");
     } finally {
       setReading(false);
+      setProgress(null);
     }
   }
 
@@ -231,7 +270,11 @@ export function ImportView({ site }: DashProps) {
         <div className="imp">
           <div className="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="8.5" cy="10" r="1.6" /><path d="M21 16l-5-5-4 4-2-2-4 4" /></svg></div>
           <h3>Screenshot import</h3>
-          <p>Drop or paste a screenshot of any dashboard. AI reads the numbers into rows, and you check them before saving.</p>
+          <p>
+            {aiReady === false
+              ? "Drop or paste a screenshot of a stats table. KeepStat reads the dates and numbers in your browser, and you check them before saving."
+              : "Drop or paste a screenshot of any dashboard. AI reads the numbers into rows, and you check them before saving."}
+          </p>
           <div
             className={`dropzone${shotDrag ? " drag" : ""}${reading ? " busy" : ""}`}
             role="button"
@@ -247,7 +290,7 @@ export function ImportView({ site }: DashProps) {
               if (f) loadShot(f);
             }}
           >
-            {reading ? <><span className="spin" /> Reading the numbers…</> : "Click, drop, or paste (Ctrl+V) an image"}
+            {reading ? <><span className="spin" /> {progress ?? "Reading…"}</> : "Click, drop, or paste (Ctrl+V) an image"}
           </div>
           <input
             ref={shotInput}
@@ -265,9 +308,9 @@ export function ImportView({ site }: DashProps) {
 
       {error && <div className="err" role="alert">{error}</div>}
       {aiNote && preview && (
-        <div className={`ai-note${aiNote.method === "estimated" ? " est" : ""}`} role="status">
-          <b>{aiNote.method === "estimated" ? "Estimated from the chart." : "Read from the screenshot."}</b> {aiNote.notes}{" "}
-          {aiNote.method === "estimated" ? "Check the numbers against the original before saving." : "Check a few rows against the original before saving."}
+        <div className={`ai-note${aiNote.method !== "exact" ? " est" : ""}`} role="status">
+          <b>{aiNote.method === "estimated" ? "Estimated from the chart." : aiNote.method === "ocr" ? "Read from the screenshot's text." : "Read from the screenshot."}</b> {aiNote.notes}{" "}
+          {aiNote.method === "exact" ? "Check a few rows against the original before saving." : "Check the numbers against the original before saving."}
         </div>
       )}
 
