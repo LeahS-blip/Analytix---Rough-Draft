@@ -108,6 +108,18 @@ export async function fetchDaily(cfg: VercelConfig, since: string, until: string
  * Top values of one dimension between two YYYY-MM-DD dates (inclusive), e.g. the top
  * pages for a day. Vercel groups anything past `limit` into an "Others" row, which we keep.
  */
+/** Vercel's names for each breakdown (its `by` parameter). */
+const VDIM: Record<Dimension, string> = {
+  requestPath: "requestPath",
+  referrerHostname: "referrerHostname",
+  country: "country",
+  deviceType: "deviceType",
+  browser: "browserName",
+  os: "osName",
+  utmSource: "utmSource",
+  utmCampaign: "utmCampaign",
+};
+
 export async function fetchBreakdown(
   cfg: VercelConfig,
   dimension: Dimension,
@@ -115,17 +127,18 @@ export async function fetchBreakdown(
   until: string,
   limit = 25
 ): Promise<BreakdownRow[]> {
+  const by = VDIM[dimension];
   const body = await call<{ data?: Record<string, unknown>[] }>(cfg.token, "/v1/query/web-analytics/visits/aggregate", {
     projectId: cfg.projectId,
     teamId: cfg.teamId,
     since,
     until,
-    by: dimension,
-    limit: String(limit),
+    by,
+    limit: String(Math.min(100, limit)),
   });
   return (body?.data ?? [])
     .map((r) => ({
-      key: String(r[dimension] ?? "").trim() || (dimension === "referrerHostname" ? "(direct)" : "(unknown)"),
+      key: String(r[by] ?? "").trim() || (dimension === "referrerHostname" ? "(direct)" : dimension.startsWith("utm") ? "(none)" : "(unknown)"),
       visitors: Number(r.visitors ?? 0),
       pageviews: Number(r.pageviews ?? 0),
     }))

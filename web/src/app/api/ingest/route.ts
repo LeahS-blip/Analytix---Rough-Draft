@@ -10,20 +10,26 @@ import { q, q1 } from "@/lib/db";
  *
  *   POST /api/ingest
  *   Authorization: Bearer ks_...
- *   { "date": "2026-11-12", "visitors": 120, "pageviews": 300, "bounce_rate": 41.5,
+ *   { "date": "2026-11-12", "visitors": 120, "pageviews": 300, "bounce_rate": 41.5, "avg_duration": 74,
  *     "pages": [{ "key": "/blog", "visitors": 40, "pageviews": 70 }],
- *     "referrers": [...], "countries": [...], "devices": [...] }
+ *     "referrers": [...], "countries": [...], "devices": [...],
+ *     "browsers": [...], "os": [...], "utm_sources": [...], "utm_campaigns": [...] }
+ * avg_duration is the average visit length in seconds.
  *
  * or many days at once: { "rows": [ { "date": ..., "visitors": ... }, ... ] }  (up to 5,000)
  * "date" defaults to today (UTC). Sending a date again replaces it.
  */
 type Item = { key?: unknown; visitors?: unknown; pageviews?: unknown };
 type Row = {
-  date?: unknown; visitors?: unknown; pageviews?: unknown; bounce_rate?: unknown;
+  date?: unknown; visitors?: unknown; pageviews?: unknown; bounce_rate?: unknown; avg_duration?: unknown;
   pages?: Item[]; referrers?: Item[]; countries?: Item[]; devices?: Item[];
+  browsers?: Item[]; os?: Item[]; utm_sources?: Item[]; utm_campaigns?: Item[];
 };
 
-const DIMS: [keyof Row, string][] = [["pages", "requestPath"], ["referrers", "referrerHostname"], ["countries", "country"], ["devices", "deviceType"]];
+const DIMS: [keyof Row, string][] = [
+  ["pages", "requestPath"], ["referrers", "referrerHostname"], ["countries", "country"], ["devices", "deviceType"],
+  ["browsers", "browser"], ["os", "os"], ["utm_sources", "utmSource"], ["utm_campaigns", "utmCampaign"],
+];
 const num = (v: unknown) => (v == null || v === "" ? null : Number.isFinite(Number(v)) ? Number(v) : NaN);
 
 export const POST = handle(async (req: Request) => {
@@ -49,11 +55,11 @@ export const POST = handle(async (req: Request) => {
   const rows = input.map((r, i) => {
     const date = r.date == null ? today : String(r.date).slice(0, 10);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date))) throw new HttpError(400, `Row ${i + 1}: date must be YYYY-MM-DD.`);
-    const v = num(r.visitors), p = num(r.pageviews), b = num(r.bounce_rate);
-    if ([v, p, b].some((x) => Number.isNaN(x) || (x != null && x < 0))) throw new HttpError(400, `Row ${i + 1}: numbers must be zero or more.`);
+    const v = num(r.visitors), p = num(r.pageviews), b = num(r.bounce_rate), s = num(r.avg_duration);
+    if ([v, p, b, s].some((x) => Number.isNaN(x) || (x != null && x < 0))) throw new HttpError(400, `Row ${i + 1}: numbers must be zero or more.`);
     if (v == null && p == null) throw new HttpError(400, `Row ${i + 1}: send visitors and/or pageviews.`);
     if (b != null && b > 100) throw new HttpError(400, `Row ${i + 1}: bounce_rate is a percentage (0–100).`);
-    return { date, visitors: v, pageviews: p, bounce_rate: b, raw: r };
+    return { date, visitors: v, pageviews: p, bounce_rate: b, avg_duration: s, raw: r };
   });
 
   await upsertMetrics(src.site_id, "day", rows, `push:${src.id}`);

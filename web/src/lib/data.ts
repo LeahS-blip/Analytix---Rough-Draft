@@ -15,6 +15,8 @@ export type MetricRow = {
   visitors: number | null;
   pageviews: number | null;
   bounce_rate: number | null;
+  /** average visit length in seconds, when the source reports it */
+  avg_duration?: number | null;
 };
 
 export type MonthRow = MetricRow & { month: string; days: number; granularity: "day" | "month" };
@@ -94,13 +96,14 @@ export async function upsertMetrics(
   for (let i = 0; i < rows.length; i += 1000) {
     const chunk = rows.slice(i, i + 1000);
     await q(
-      `INSERT INTO metrics (site_id, granularity, date, visitors, pageviews, bounce_rate, origin, updated_at)
-       SELECT $1, $2, t.d, t.v, t.p, t.b, $3, now()
-       FROM unnest($4::text[], $5::int[], $6::int[], $7::float8[]) AS t(d, v, p, b)
+      `INSERT INTO metrics (site_id, granularity, date, visitors, pageviews, bounce_rate, avg_duration, origin, updated_at)
+       SELECT $1, $2, t.d, t.v, t.p, t.b, t.s, $3, now()
+       FROM unnest($4::text[], $5::int[], $6::int[], $7::float8[], $8::float8[]) AS t(d, v, p, b, s)
        ON CONFLICT (site_id, granularity, date) DO UPDATE SET
          visitors = COALESCE(EXCLUDED.visitors, metrics.visitors),
          pageviews = COALESCE(EXCLUDED.pageviews, metrics.pageviews),
          bounce_rate = COALESCE(EXCLUDED.bounce_rate, metrics.bounce_rate),
+         avg_duration = COALESCE(EXCLUDED.avg_duration, metrics.avg_duration),
          origin = EXCLUDED.origin,
          updated_at = EXCLUDED.updated_at`,
       [
@@ -111,6 +114,7 @@ export async function upsertMetrics(
         chunk.map((r) => (r.visitors == null ? null : Math.round(r.visitors))),
         chunk.map((r) => (r.pageviews == null ? null : Math.round(r.pageviews))),
         chunk.map((r) => r.bounce_rate),
+        chunk.map((r) => (r.avg_duration == null || !Number.isFinite(r.avg_duration) ? null : r.avg_duration)),
       ]
     );
   }
@@ -119,7 +123,7 @@ export async function upsertMetrics(
 
 export async function dailyMetrics(siteId: number): Promise<MetricRow[]> {
   return q(
-    "SELECT date, visitors, pageviews, bounce_rate FROM metrics WHERE site_id = $1 AND granularity = 'day' ORDER BY date",
+    "SELECT date, visitors, pageviews, bounce_rate, avg_duration FROM metrics WHERE site_id = $1 AND granularity = 'day' ORDER BY date",
     [siteId]
   );
 }
@@ -130,9 +134,9 @@ export async function dailyMetrics(siteId: number): Promise<MetricRow[]> {
  */
 export async function monthlyMetrics(siteId: number): Promise<MonthRow[]> {
   const [days, months] = await Promise.all([
-    q<{ month: string; visitors: number | null; pageviews: number | null; bounce_rate: number | null; days: number }>(
+    q<{ month: string; visitors: number | null; pageviews: number | null; bounce_rate: number | null; avg_duration: number | null; days: number }>(
       `SELECT substr(date,1,7) AS month, SUM(visitors)::int AS visitors, SUM(pageviews)::int AS pageviews,
-              AVG(bounce_rate)::float8 AS bounce_rate, COUNT(*)::int AS days
+              AVG(bounce_rate)::float8 AS bounce_rate, AVG(avg_duration)::float8 AS avg_duration, COUNT(*)::int AS days
        FROM metrics WHERE site_id = $1 AND granularity = 'day' GROUP BY 1`,
       [siteId]
     ),
@@ -234,6 +238,77 @@ export type BreakdownSummary = {
 };
 
 const isoDaysAgo = (n: number) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
+
+/* ---------------- explore: every kept item, and one item's history ---------------- */
+
+export type ExploreItem = {
+  key: string;
+  visitors: number;
+  pageviews: number;
+  v30: number;
+  pv30: number;
+  vPrior: number;
+  pvPrior: number;
+  first: string;
+  last: string;
+  days: number; // days it appeared in a daily breakdown
+};
+
+export async function exploreDims(siteId: number): Promise<{ dimension: string; items: number; from: string; to: string }[]> {
+  return q(
+    `SELECT dimension, COUNT(DISTINCT key)::int AS items, MIN(date_from) AS "from", MAX(date_to) AS "to"
+     FROM breakdowns WHERE site_id = $1 AND dimension <> 'spikeReferrer' GROUP BY dimension`,
+    [siteId]
+  );
+}
+
+export async function exploreItems(siteId: number, dim: string): Promise<ExploreItem[]> {
+  return q(
+    `SELECT key,
+            COALESCE(SUM(visitors), 0)::int AS visitors, COALESCE(SUM(pageviews), 0)::int AS pageviews,
+            COALESCE(SUM(visitors) FILTER (WHERE date_from >= $3), 0)::int AS v30,
+            COALESCE(SUM(pageviews) FILTER (WHERE date_from >= $3), 0)::int AS pv30,
+            COALESCE(SUM(visitors) FILTER (WHERE date_from >= $4 AND date_to < $3), 0)::int AS "vPrior",
+            COALESCE(SUM(pageviews) FILTER (WHERE date_from >= $4 AND date_to < $3), 0)::int AS "pvPrior",
+            MIN(date_from) AS first, MAX(date_to) AS last,
+            (COUNT(DISTINCT date_from) FILTER (WHERE date_from = date_to))::int AS days
+     FROM breakdowns WHERE site_id = $1 AND dimension = $2 AND key <> 'Others'
+     GROUP BY key ORDER BY 2 DESC, 3 DESC LIMIT 500`,
+    [siteId, dim, isoDaysAgo(30), isoDaysAgo(60)]
+  );
+}
+
+export type ExploreHistory = {
+  /** one row per day the item was in that day's breakdown */
+  days: { date: string; visitors: number | null; pageviews: number | null; share: number | null }[];
+  /** multi-day blocks (the first backfill, GitHub's 14-day windows) that can't be split into days */
+  blocks: { from: string; to: string; visitors: number | null; pageviews: number | null }[];
+  /** days that have a daily breakdown at all, so a missing day means "not in the top list", not "no data" */
+  coveredFrom: string | null;
+};
+
+export async function exploreHistory(siteId: number, dim: string, key: string): Promise<ExploreHistory> {
+  const [rows, cover] = await Promise.all([
+    q<{ date_from: string; date_to: string; visitors: number | null; pageviews: number | null; total: number | null }>(
+      `SELECT b.date_from, b.date_to, b.visitors, b.pageviews,
+              (SELECT SUM(x.visitors) FROM breakdowns x WHERE x.site_id = b.site_id AND x.dimension = b.dimension
+                 AND x.date_from = b.date_from AND x.date_to = b.date_to)::int AS total
+       FROM breakdowns b WHERE b.site_id = $1 AND b.dimension = $2 AND b.key = $3 ORDER BY b.date_from`,
+      [siteId, dim, key]
+    ),
+    q1<{ d: string | null }>(
+      "SELECT MIN(date_from) AS d FROM breakdowns WHERE site_id = $1 AND dimension = $2 AND date_from = date_to",
+      [siteId, dim]
+    ),
+  ]);
+  return {
+    days: rows
+      .filter((r) => r.date_from === r.date_to)
+      .map((r) => ({ date: r.date_from, visitors: r.visitors, pageviews: r.pageviews, share: r.total && r.visitors != null ? r.visitors / r.total : null })),
+    blocks: rows.filter((r) => r.date_from !== r.date_to).map((r) => ({ from: r.date_from, to: r.date_to, visitors: r.visitors, pageviews: r.pageviews })),
+    coveredFrom: cover?.d ?? null,
+  };
+}
 
 export async function breakdownSummary(siteId: number): Promise<BreakdownSummary> {
   const recentFrom = isoDaysAgo(30);

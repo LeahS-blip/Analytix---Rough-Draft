@@ -98,10 +98,14 @@ CREATE INDEX IF NOT EXISTS breakdowns_range ON breakdowns(site_id, dimension, da
 -- v4: push sources (your own script sends numbers). Only a SHA-256 of the key is stored.
 ALTER TABLE sources ADD COLUMN IF NOT EXISTS ingest_hash TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS sources_ingest ON sources(ingest_hash) WHERE ingest_hash IS NOT NULL;
+-- v5: average visit length in seconds (Plausible, GA4, push API)
+ALTER TABLE metrics ADD COLUMN IF NOT EXISTS avg_duration DOUBLE PRECISION;
+-- the Explore view reads one item's history across all dates
+CREATE INDEX IF NOT EXISTS breakdowns_key ON breakdowns(site_id, dimension, key);
 `;
 
 /** Bump when SCHEMA changes; cold starts skip the DDL when the database is already current. */
-const SCHEMA_VERSION = "4";
+const SCHEMA_VERSION = "5";
 
 async function connectPostgres(url: string): Promise<Db> {
   const { default: postgres } = await import("postgres");

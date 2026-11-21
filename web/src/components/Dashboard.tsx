@@ -10,6 +10,7 @@ import { monthLabel, postJson } from "./client";
 import { RANGES, type Range } from "./stats";
 import { TITLES, type View } from "./views";
 import { OverviewView, TrendsView, HistoryView } from "./viewsData";
+import { ExploreView } from "./viewsExplore";
 import { SnapshotsView, ImportView, SourcesView, SettingsView, AddSourceModal } from "./viewsManage";
 
 export type DashProps = {
@@ -55,6 +56,7 @@ export function Modal({ title, desc, children }: { title: string; desc?: string;
 const ICONS: Record<View, React.ReactNode> = {
   overview: <><rect x="3" y="3" width="7" height="9" rx="1.5" /><rect x="14" y="3" width="7" height="5" rx="1.5" /><rect x="14" y="12" width="7" height="9" rx="1.5" /><rect x="3" y="16" width="7" height="5" rx="1.5" /></>,
   trends: <path d="M3 12h4l3 8 4-16 3 8h4" />,
+  explore: <><circle cx="10.5" cy="10.5" r="6.5" /><path d="M20 20l-4.8-4.8" /></>,
   history: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 9h18M8 4v16" /></>,
   snapshots: <><path d="M12 3v18M5 8l7-5 7 5" /><rect x="4" y="8" width="16" height="13" rx="2" /></>,
   import: <><path d="M12 15V3M8 7l4-4 4 4" /><path d="M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4" /></>,
@@ -232,7 +234,7 @@ export function Dashboard(props: DashProps) {
           </div>
 
           <nav className="nav">
-            {(["overview", "trends", "history"] as View[]).map((v) => (
+            {(["overview", "trends", "explore", "history"] as View[]).map((v) => (
               <a key={v} href={`/app/${site.id}/${v}`} onClick={navTo(v)} className={v === view ? "active" : ""} aria-current={v === view ? "page" : undefined}>
                 <Icon v={v} /> {TITLES[v]}
               </a>
@@ -293,6 +295,7 @@ export function Dashboard(props: DashProps) {
           <div className="content" key={view}>
             {view === "overview" && <OverviewView {...vp} range={range} />}
             {view === "trends" && <TrendsView {...vp} range={range} />}
+            {view === "explore" && <ExploreView {...vp} />}
             {view === "history" && <HistoryView {...vp} />}
             {view === "snapshots" && <SnapshotsView {...vp} />}
             {view === "import" && <ImportView {...vp} />}

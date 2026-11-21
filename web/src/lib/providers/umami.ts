@@ -63,6 +63,7 @@ export const umami: Provider<UmamiConfig> = {
   backfill: [3650],
   refetch: 35,
   breakdowns: "range",
+  dims: ["requestPath", "referrerHostname", "country", "deviceType", "browser", "os"],
   async options(f) {
     const c = creds(f);
     const r = await get<{ data?: { id: string; name: string; domain: string }[] } | { id: string; name: string; domain: string }[]>(c, "/websites", { pageSize: "100" });
@@ -94,7 +95,16 @@ export const umami: Provider<UmamiConfig> = {
     return { points, raw: r };
   },
   async fetchBreakdown(cfg, dim, since, until, limit) {
-    const types: Record<Dimension, string[]> = { requestPath: ["path", "url"], referrerHostname: ["referrer"], country: ["country"], deviceType: ["device"] };
+    const types: Record<Dimension, string[]> = {
+      requestPath: ["path", "url"],
+      referrerHostname: ["referrer"],
+      country: ["country"],
+      deviceType: ["device"],
+      browser: ["browser"],
+      os: ["os"],
+      utmSource: [],
+      utmCampaign: [],
+    };
     let rows: { x: string | null; y: number }[] = [];
     for (const type of types[dim]) {
       try {

@@ -49,9 +49,11 @@ Old prototype links (`/Analytix/index.html`) redirect to `/`.
 | · GitHub | Token → repo. Traffic views + popular pages/referrers; GitHub keeps only 14 days, stored as non-overlapping 14-day blocks. |
 | · Push API | `POST /api/ingest` with `Authorization: Bearer ks_…` and `{date, visitors, pageviews, bounce_rate, pages, referrers, countries, devices}` or `{rows:[…]}`. Only a SHA-256 of the key is stored. |
 | Daily snapshots | Vercel Cron in production; an hourly in-process check when running on your own machine. Pause/resume, "Fetch now", per-run log with errors. |
-| Dashboard | Overview (KPIs, history chart, insights, channels, breakdowns), Trends (by the numbers, weekday profile, year over year), History, Snapshots log, Import, Sources, Settings, light/dark |
+| Dashboard | Overview (KPIs, history chart, insights, channels, breakdowns), Trends (by the numbers, weekday profile, year over year), Explore, History, Snapshots log, Import, Sources, Settings, light/dark |
+| Breakdowns kept | Pages, referrers, countries, devices, browsers, operating systems, UTM sources and campaigns, plus average visit length (Plausible, GA4, push). Each provider gives what it has (GitHub: pages + referrers). |
+| Explore | Every page / referrer / country / browser / campaign ever kept, searchable and sortable (all kept, last 30 days, change, first seen, "new"), and each one's day-by-day history, best day and share. Export every breakdown row as CSV. |
 | Insights | Spikes and who caused them, week over week, month-end forecast, year over year, new referrers, AI-assistant traffic, channel mix, growth streaks, bounce change, best month, weekday pattern, records |
-| Export | Monthly or daily CSV download |
+| Export | Monthly or daily CSV (daily includes average visit seconds), and all breakdowns as CSV |
 
 **Not built yet** (shown as "soon" in the UI): Ask AI, Timeline/milestones,
 Reports, Stripe, billing/plan limits, password reset, email.

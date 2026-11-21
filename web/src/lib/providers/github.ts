@@ -25,6 +25,7 @@ export const github: Provider<GithubConfig> = {
   breakdowns: "window",
   windowDays: 14,
   shownDays: 14,
+  dims: ["requestPath", "referrerHostname"],
   async options(f) {
     const token = need(f, "token", "GitHub token");
     const repos = await gh<{ full_name: string; private: boolean; permissions?: { push?: boolean } }[]>(token, "/user/repos?per_page=100&sort=updated&affiliation=owner,collaborator,organization_member");

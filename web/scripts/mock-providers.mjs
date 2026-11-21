@@ -34,7 +34,12 @@ const pages = [["/", 0.38], ["/blog/shipping-fast", 0.22], ["/projects", 0.18], 
 const refs = [["(direct)", 0.4], ["google.com", 0.25], ["github.com", 0.12], ["x.com", 0.08], ["chatgpt.com", 0.06], ["perplexity.ai", 0.03], ["duckduckgo.com", 0.06]];
 const countries = [["US", 0.48], ["GB", 0.14], ["DE", 0.12], ["CA", 0.1], ["IN", 0.08], ["FR", 0.08]];
 const devices = [["desktop", 0.64], ["mobile", 0.33], ["tablet", 0.03]];
-const LISTS = { page: pages, ref: refs, country: countries, device: devices };
+const browsers = [["Chrome", 0.58], ["Safari", 0.26], ["Firefox", 0.1], ["Edge", 0.06]];
+const oses = [["Mac", 0.38], ["Windows", 0.3], ["iOS", 0.2], ["Android", 0.12]];
+const utmS = [["", 0.86], ["newsletter", 0.09], ["twitter", 0.05]];
+const utmC = [["", 0.86], ["launch-week", 0.1], ["nov-digest", 0.04]];
+const LISTS = { page: pages, ref: refs, country: countries, device: devices, browser: browsers, os: oses, utmS, utmC };
+const dur = (d) => 60 + ((Date.parse(d) / DAY) % 9) * 4 + Math.max(0, (Date.parse(d) - (today - 30 * DAY)) / DAY) * 0.8; // seconds, rising lately
 
 /** [{k, v}] for a dimension over some days; most of the spike came from HN to one post. */
 function breakdown(dim, days) {
@@ -93,8 +98,8 @@ http
         const dim = body.dimensions?.[0]?.name;
         if (!dim) return send(200, { rows: [{ dimensionValues: [], metricValues: [{ value: "1" }] }] });
         if (dim === "date")
-          return send(200, { rowCount: days.length, rows: days.map((d) => ({ dimensionValues: [{ value: d.replaceAll("-", "") }], metricValues: [{ value: String(visitors(d)) }, { value: String(Math.round(visitors(d) * 1.7)) }, { value: String(bounce(d) / 100) }] })) });
-        const map = { pagePath: "page", sessionSource: "ref", countryId: "country", deviceCategory: "device" };
+          return send(200, { rowCount: days.length, rows: days.map((d) => ({ dimensionValues: [{ value: d.replaceAll("-", "") }], metricValues: [{ value: String(visitors(d)) }, { value: String(Math.round(visitors(d) * 1.7)) }, { value: String(bounce(d) / 100) }, { value: String(dur(d)) }] })) });
+        const map = { pagePath: "page", sessionSource: "ref", countryId: "country", deviceCategory: "device", browser: "browser", operatingSystem: "os", sessionManualSource: "utmS", sessionCampaignName: "utmC" };
         const rows = breakdown(map[dim], days).map((r) => ({ dimensionValues: [{ value: r.k === "(direct)" ? "(direct)" : r.k.replace(".com", "") }], metricValues: [{ value: String(r.v) }, { value: String(Math.round(r.v * 1.7)) }] }));
         return send(200, { rows: rows.slice(0, body.limit || 100) });
       }
@@ -110,8 +115,8 @@ http
       else days = range(iso(today - 7 * DAY), iso(today));
       const d0 = body.dimensions?.[0];
       if (!d0) return send(200, { results: [{ dimensions: [], metrics: [days.reduce((s, d) => s + visitors(d), 0)] }] });
-      if (d0 === "time:day") return send(200, { results: days.map((d) => ({ dimensions: [d], metrics: [visitors(d), Math.round(visitors(d) * 1.6), Math.round(bounce(d))] })) });
-      const map = { "event:page": "page", "visit:source": "ref", "visit:country": "country", "visit:device": "device" };
+      if (d0 === "time:day") return send(200, { results: days.map((d) => ({ dimensions: [d], metrics: [visitors(d), Math.round(visitors(d) * 1.6), Math.round(bounce(d)), Math.round(dur(d))].slice(0, body.metrics.length) })) });
+      const map = { "event:page": "page", "visit:source": "ref", "visit:country": "country", "visit:device": "device", "visit:browser": "browser", "visit:os": "os", "visit:utm_source": "utmS", "visit:utm_campaign": "utmC" };
       const rows = breakdown(map[d0], days).map((r) => {
         const k = map[d0] === "ref" ? ({ "(direct)": "Direct / None", "google.com": "Google", "x.com": "Twitter", "chatgpt.com": "ChatGPT", "news.ycombinator.com": "Hacker News", "duckduckgo.com": "DuckDuckGo" }[r.k] ?? r.k) : map[d0] === "device" ? r.k[0].toUpperCase() + r.k.slice(1) : r.k;
         return { dimensions: [k], metrics: body.metrics.length > 1 ? [r.v, Math.round(r.v * 1.6)] : [r.v] };
@@ -131,7 +136,7 @@ http
       if (p === "/umami/v1/websites/web-1/metrics") {
         const t = u.searchParams.get("type");
         if (t === "url") return send(400, { error: "Invalid type" }); // newer Umami: "path"
-        const map = { path: "page", referrer: "ref", country: "country", device: "device" };
+        const map = { path: "page", referrer: "ref", country: "country", device: "device", browser: "browser", os: "os" };
         return send(200, breakdown(map[t], days).map((r) => ({ x: r.k === "(direct)" ? "" : r.k, y: r.v })));
       }
       return send(404, { error: "nope" });
@@ -152,7 +157,7 @@ http
         let groups;
         if (dimsField === "date") groups = days.map((d) => ({ count: Math.round(visitors(d) * 1.5), sum: { visits: visitors(d) }, dimensions: { date: d } }));
         else {
-          const map = { requestPath: "page", refererHost: "ref", countryName: "country", deviceType: "device" };
+          const map = { requestPath: "page", refererHost: "ref", countryName: "country", deviceType: "device", userAgentBrowser: "browser", userAgentOS: "os" };
           groups = breakdown(map[dimsField], days).map((r) => ({ count: Math.round(r.v * 1.5), sum: { visits: r.v }, dimensions: { [dimsField]: r.k === "(direct)" ? "" : r.k } }));
         }
         return send(200, { data: { viewer: { accounts: [{ rumPageloadEventsAdaptiveGroups: groups }] } }, errors: null });
@@ -180,7 +185,7 @@ http
     if (since < iso(today - 30 * DAY)) return send(400, { error: { message: "Invalid request: the hobby plan only grants access to the latest 31 days of data." } });
     const days = range(since, until);
     if (by === "day") return send(200, { data: days.map((d) => ({ timestamp: d + "T00:00:00.000Z", visitors: visitors(d), pageviews: Math.round(visitors(d) * 1.6) })) });
-    const map = { requestPath: "page", referrerHostname: "ref", country: "country", deviceType: "device" };
+    const map = { requestPath: "page", referrerHostname: "ref", country: "country", deviceType: "device", browserName: "browser", osName: "os", utmSource: "utmS", utmCampaign: "utmC" };
     return send(200, { data: breakdown(map[by], days).map((r) => ({ [by]: r.k === "(direct)" ? "" : r.k, visitors: r.v, pageviews: Math.round(r.v * 1.6) })) });
   })
   .listen(5099, "127.0.0.1", () => console.log("mock providers on http://127.0.0.1:5099 (spike " + spike + ")"));

@@ -45,7 +45,7 @@ export async function runSource(sourceId: number): Promise<{ ok: boolean; rows: 
     try {
       const { points, raw, days } = await fetchRecentDaysWith(p, cfg, w);
       const since = day(-days);
-      const rows = points.map((x) => ({ date: x.date, visitors: x.visitors, pageviews: x.pageviews, bounce_rate: x.bounce_rate ?? null }));
+      const rows = points.map((x) => ({ date: x.date, visitors: x.visitors, pageviews: x.pageviews, bounce_rate: x.bounce_rate ?? null, avg_duration: x.avg_duration ?? null }));
       await Promise.all([
         rows.length ? upsertMetrics(src.site_id, "day", rows, `${src.kind}:${src.id}`) : null,
         recordSnapshot({
@@ -125,7 +125,10 @@ export async function collectBreakdowns(
     [siteId]
   );
   const fetchAll = async (from: string, to: string, limit: number) => {
-    const results = await Promise.all(DIMENSIONS.map(async (dim) => ({ dim, rows: await p.fetchBreakdown!(cfg, dim, from, to, limit) })));
+    // one failing dimension (e.g. a plan without UTM data) doesn't lose the others
+    const results = await Promise.all(
+      (p.dims ?? DIMENSIONS).map(async (dim) => ({ dim, rows: await p.fetchBreakdown!(cfg, dim, from, to, limit).catch(() => []) }))
+    );
     return results.flatMap(({ dim, rows }) => rows.map((r) => ({ dim, ...r })));
   };
 
@@ -137,7 +140,9 @@ export async function collectBreakdowns(
     return;
   }
 
-  const oldestAllowed = day(-Math.max(1, windowDays - 1));
+  // the first day with any traffic, so a 10-year request for a 1-year-old site isn't dated back 10 years
+  const firstData = points.filter((x) => x.visitors > 0).map((x) => x.date).sort()[0];
+  const oldestAllowed = [day(-Math.max(1, windowDays - 1)), firstData].filter(Boolean).sort().at(-1)!;
   const ranges: [string, string][] = [];
   if (!last?.d) {
     // Split at the 30- and 60-day marks, so "last 30 days" and "the 30 before" work from day one.

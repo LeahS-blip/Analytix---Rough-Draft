@@ -181,7 +181,7 @@ export function OverviewView({ site, daily, monthly, sources, breakdown, range }
         </div>
       </div>
 
-      <BreakdownCard breakdown={breakdown} />
+      <BreakdownCard breakdown={breakdown} siteId={site.id} />
     </>
   );
 }
@@ -360,6 +360,7 @@ const INSIGHT_TAG: Record<Insight["kind"], string> = {
   yoy: "vs last year",
   streak: "streak",
   bounce: "engagement",
+  engagement: "engagement",
   growth: "record",
 };
 
@@ -379,15 +380,20 @@ function InsightList({ items }: { items: Insight[] }) {
   );
 }
 
-const DIM_INFO: { key: string; title: string; metric: "pageviews" | "visitors"; unit: string }[] = [
+const DIM_INFO: { key: string; title: string; metric: "pageviews" | "visitors"; unit: string; extra?: boolean }[] = [
   { key: "requestPath", title: "Top pages", metric: "pageviews", unit: "views" },
   { key: "referrerHostname", title: "Referrers", metric: "visitors", unit: "visitors" },
   { key: "country", title: "Countries", metric: "visitors", unit: "visitors" },
   { key: "deviceType", title: "Devices", metric: "visitors", unit: "visitors" },
+  // shown only when the source provides them
+  { key: "browser", title: "Browsers", metric: "visitors", unit: "visitors", extra: true },
+  { key: "os", title: "Operating systems", metric: "visitors", unit: "visitors", extra: true },
+  { key: "utmSource", title: "Campaign sources", metric: "visitors", unit: "visitors", extra: true },
+  { key: "utmCampaign", title: "Campaigns", metric: "visitors", unit: "visitors", extra: true },
 ];
 
 let regionNames: Intl.DisplayNames | null = null;
-function prettyKey(dim: string, key: string) {
+export function prettyKey(dim: string, key: string) {
   if (key === "Others") return "Everything else";
   if (dim === "country" && /^[A-Z]{2}$/.test(key)) {
     try {
@@ -397,11 +403,12 @@ function prettyKey(dim: string, key: string) {
       return key;
     }
   }
-  if (dim === "deviceType") return key.charAt(0).toUpperCase() + key.slice(1);
+  if (key === "(none)") return dim.startsWith("utm") ? "No campaign" : key;
+  if (dim === "deviceType" || dim === "browser" || dim === "os") return key.charAt(0).toUpperCase() + key.slice(1);
   return key;
 }
 
-function BreakdownCard({ breakdown }: { breakdown: DashProps["breakdown"] }) {
+function BreakdownCard({ breakdown, siteId }: { breakdown: DashProps["breakdown"]; siteId: number }) {
   const [scope, setScope] = useState<"recent" | "all">("recent");
   const has = !!breakdown.from;
   return (
@@ -431,7 +438,7 @@ function BreakdownCard({ breakdown }: { breakdown: DashProps["breakdown"] }) {
         <>
         <ChannelBar items={breakdown.dims.referrerHostname?.[scope] ?? []} />
         <div className="bd-grid">
-          {DIM_INFO.map((d) => {
+          {DIM_INFO.filter((d) => !d.extra || (breakdown.dims[d.key]?.all ?? []).some((i) => i.key !== "(none)" && i.key !== "(unknown)" && i.visitors > 0)).map((d) => {
             const items = (breakdown.dims[d.key]?.[scope] ?? []).filter((i) => i[d.metric] > 0).slice(0, 6);
             const total = (breakdown.dims[d.key]?.[scope] ?? []).reduce((s, i) => s + i[d.metric], 0);
             const max = Math.max(1, ...items.map((i) => i[d.metric]));
@@ -459,6 +466,9 @@ function BreakdownCard({ breakdown }: { breakdown: DashProps["breakdown"] }) {
             );
           })}
         </div>
+        <p className="small" style={{ margin: "14px 0 0" }}>
+          <Link href={`/app/${siteId}/explore`} className="ex-link">See every one, with its full history, in Explore →</Link>
+        </p>
         </>
       )}
     </div>

@@ -83,5 +83,37 @@ r = await call("/api/ingest", { visitors: 1 }, "POST", { authorization: "Bearer 
 assert.equal(r.status, 401);
 console.log("✓ push      41 days + details, bad date → 400, bad key → 401");
 
+// more useful data: browsers / OS / campaigns, visit duration, Explore, exports
+async function get(path) {
+  const r = await fetch(APP + path, { headers: { cookie } });
+  return { status: r.status, text: await r.text() };
+}
+const dims = JSON.parse((await get(`/api/sites/${sites.plausible}/explore`)).text).dims.map((d) => d.dimension).sort();
+for (const d of ["browser", "os", "utmSource", "utmCampaign", "requestPath"]) assert.ok(dims.includes(d), `plausible missing ${d}: ${dims}`);
+const vdims = JSON.parse((await get(`/api/sites/${sites.vercel}/explore`)).text).dims.map((d) => d.dimension);
+assert.ok(vdims.includes("browser") && vdims.includes("utmCampaign"), `vercel dims: ${vdims}`);
+const ghdims = JSON.parse((await get(`/api/sites/${sites.github}/explore`)).text).dims.map((d) => d.dimension);
+assert.deepEqual(ghdims.sort(), ["referrerHostname", "requestPath"]);
+const items = JSON.parse((await get(`/api/sites/${sites.plausible}/explore?dim=requestPath`)).text).items;
+assert.ok(items.length >= 5 && items[0].pageviews > 0 && items[0].first, JSON.stringify(items[0]));
+const hist = JSON.parse((await get(`/api/sites/${sites.plausible}/explore?dim=requestPath&key=${encodeURIComponent(items[0].key)}`)).text);
+assert.ok(hist.blocks.length + hist.days.length >= 2, JSON.stringify(hist).slice(0, 200));
+const camp = JSON.parse((await get(`/api/sites/${sites.plausible}/explore?dim=utmCampaign`)).text).items.map((i) => i.key);
+assert.ok(camp.includes("launch-week") && camp.includes("(none)"), camp.join());
+const csv = (await get(`/api/sites/${sites.plausible}/export?granularity=day`)).text.trim().split("\n");
+assert.equal(csv[0], "date,visitors,page_views,bounce_rate,avg_visit_seconds");
+assert.ok(/,\d+$/.test(csv.at(-2)), `no duration in ${csv.at(-2)}`);
+const gacsv = (await get(`/api/sites/${sites.ga4}/export?granularity=day`)).text.trim().split("\n");
+assert.ok(/,\d+$/.test(gacsv.at(-2)), `no GA duration in ${gacsv.at(-2)}`);
+const bcsv = (await get(`/api/sites/${sites.plausible}/export?granularity=breakdowns`)).text.split("\n");
+assert.equal(bcsv[0], "kind,from,to,name,visitors,page_views");
+assert.ok(bcsv.some((l) => l.startsWith("browser,")), "no browser rows in breakdown export");
+r = await call("/api/ingest", { date: day(-2), visitors: 60, avg_duration: 95, browsers: [{ key: "Firefox", visitors: 20 }], utm_campaigns: [{ key: "spring", visitors: 5 }] }, "POST", auth);
+assert.equal(r.status, 200, JSON.stringify(r.json));
+assert.equal(r.json.details, 2);
+const pdims = JSON.parse((await get(`/api/sites/${ps.json.id}/explore`)).text).dims.map((d) => d.dimension);
+assert.ok(pdims.includes("browser") && pdims.includes("utmCampaign"), pdims.join());
+console.log("✓ new data  browsers/OS/campaigns kept, visit duration in exports, Explore lists + history, push extras");
+
 console.log("\nsites:", JSON.stringify(sites), "push:", ps.json.id);
 console.log("all provider checks passed");

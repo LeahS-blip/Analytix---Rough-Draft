@@ -45,7 +45,16 @@ async function gql(cfg: CloudflareConfig, dims: string, since: string, until: st
   return r.data?.viewer?.accounts?.[0]?.rumPageloadEventsAdaptiveGroups ?? [];
 }
 
-const DIM: Record<Dimension, string> = { requestPath: "requestPath", referrerHostname: "refererHost", country: "countryName", deviceType: "deviceType" };
+const DIM: Record<Dimension, string> = {
+  requestPath: "requestPath",
+  referrerHostname: "refererHost",
+  country: "countryName",
+  deviceType: "deviceType",
+  browser: "userAgentBrowser",
+  os: "userAgentOS",
+  utmSource: "",
+  utmCampaign: "",
+};
 
 export const cloudflare: Provider<CloudflareConfig> = {
   kind: "cloudflare",
@@ -54,6 +63,7 @@ export const cloudflare: Provider<CloudflareConfig> = {
   refetch: 35,
   breakdowns: "range",
   shownDays: 180,
+  dims: ["requestPath", "referrerHostname", "country", "deviceType", "browser", "os"],
   async options(f) {
     const token = need(f, "token", "Cloudflare API token");
     const accounts = await rest<{ id: string; name: string }[]>(token, "/accounts?per_page=50");

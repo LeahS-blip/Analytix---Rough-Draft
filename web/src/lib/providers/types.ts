@@ -8,10 +8,17 @@ export class ProviderError extends Error {
   }
 }
 
-export type DailyPoint = { date: string; visitors: number; pageviews: number | null; bounce_rate?: number | null };
+export type DailyPoint = {
+  date: string;
+  visitors: number;
+  pageviews: number | null;
+  bounce_rate?: number | null;
+  /** average visit length in seconds */
+  avg_duration?: number | null;
+};
 
 /** The breakdowns KeepStat keeps, under one name whichever provider they came from. */
-export const DIMENSIONS = ["requestPath", "referrerHostname", "country", "deviceType"] as const;
+export const DIMENSIONS = ["requestPath", "referrerHostname", "country", "deviceType", "browser", "os", "utmSource", "utmCampaign"] as const;
 export type Dimension = (typeof DIMENSIONS)[number];
 export type BreakdownRow = { key: string; visitors: number; pageviews: number };
 
@@ -34,6 +41,8 @@ export interface Provider<C = unknown> {
   windowDays?: number;
   /** How many days the provider itself shows, if fixed (shown as "days X no longer shows"). */
   shownDays?: number;
+  /** Which breakdowns this provider can give (default: all of DIMENSIONS). */
+  dims?: readonly Dimension[];
   /** Things the user picks from after entering credentials (projects, websites, properties). */
   options?(f: Fields): Promise<Choice[]>;
   /** Validate the credentials + choice and return the config to encrypt, and a label. */

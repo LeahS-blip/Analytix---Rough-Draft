@@ -213,7 +213,7 @@ function cumulative(a: number[]) {
 
 
 export type Insight = {
-  kind: "kept" | "spike" | "momentum" | "pace" | "weekday" | "record" | "rising" | "source" | "ai" | "channel" | "newref" | "projection" | "yoy" | "streak" | "bounce" | "growth";
+  kind: "kept" | "spike" | "momentum" | "pace" | "weekday" | "record" | "rising" | "source" | "ai" | "channel" | "newref" | "projection" | "yoy" | "streak" | "bounce" | "growth" | "engagement";
   title: string;
   detail: string;
 };
@@ -413,6 +413,21 @@ export function insights(daily: MetricRow[], sources: SourceRow[], breakdown: Br
       out.push({ kind: "bounce", title: `Bounce rate ${now < before ? "down" : "up"} to ${now.toFixed(1)}%`, detail: `From ${before.toFixed(1)}% the 30 days before. ${now < before ? "More visitors are staying for a second page." : "More visitors leave after one page."}` });
   }
 
+  // 14b. Visit length change (Plausible, GA4, push API)
+  {
+    const now = weightedDuration(days.filter((d) => d.date >= daysAgo(30)));
+    const before = weightedDuration(days.filter((d) => d.date < daysAgo(30) && d.date >= daysAgo(60)));
+    if (now != null && before != null && before > 0 && Math.abs(now - before) / before >= 0.1)
+    {
+      const p = Math.round((Math.abs(now - before) / before) * 100);
+      out.push({
+        kind: "engagement",
+        title: now > before ? `Visits last ${p}% longer` : `Visits are ${p}% shorter`,
+        detail: `${duration(now)} on average over the last 30 days, against ${duration(before)} the 30 before.`,
+      });
+    }
+  }
+
   // 15. Best month ever (needs a few full months)
   {
     const full = new Map<string, number>();
@@ -427,7 +442,7 @@ export function insights(daily: MetricRow[], sources: SourceRow[], breakdown: Br
   }
 
   // Most useful first: what's happening now, then why, then patterns.
-  const ORDER: Insight["kind"][] = ["spike", "streak", "momentum", "projection", "yoy", "newref", "ai", "pace", "growth", "kept", "channel", "bounce", "rising", "source", "weekday", "record"];
+  const ORDER: Insight["kind"][] = ["spike", "streak", "momentum", "projection", "yoy", "newref", "ai", "pace", "growth", "kept", "channel", "bounce", "engagement", "rising", "source", "weekday", "record"];
   return out.sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind));
 }
 
@@ -502,7 +517,23 @@ export function byTheNumbers(daily: MetricRow[], monthly: MonthRow[]): NumberSta
   }
   const bounce = days.filter((d) => d.bounce_rate != null).slice(-30);
   if (bounce.length >= 7) out.push({ label: "Bounce rate, 30 days", value: `${(bounce.reduce((a, d) => a + d.bounce_rate!, 0) / bounce.length).toFixed(1)}%`, foot: "share of one-page visits" });
+  const dur = weightedDuration(days.slice(-30));
+  if (dur != null) out.push({ label: "Average visit, 30 days", value: duration(dur), foot: "how long a visit lasts" });
   return out;
+}
+
+/** "1m 14s" / "48s" */
+export function duration(sec: number) {
+  const s = Math.round(sec);
+  return s >= 60 ? `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, "0")}s` : `${s}s`;
+}
+
+/** Average visit length over some days, weighted by visitors so a quiet day doesn't count as much as a busy one. */
+function weightedDuration(rows: MetricRow[]): number | null {
+  const r = rows.filter((d) => d.avg_duration != null && (d.visitors ?? 0) > 0);
+  if (r.length < 5) return null;
+  const w = r.reduce((s, d) => s + (d.visitors ?? 0), 0);
+  return w ? r.reduce((s, d) => s + d.avg_duration! * (d.visitors ?? 0), 0) / w : null;
 }
 
 /** Median visitors by weekday over the last 12 weeks (Mon first), or null if under 3 weeks. */

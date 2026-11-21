@@ -60,7 +60,16 @@ async function report(cfg: Ga4Config, body: Record<string, unknown>): Promise<Re
   });
 }
 
-const DIM: Record<Dimension, string> = { requestPath: "pagePath", referrerHostname: "sessionSource", country: "countryId", deviceType: "deviceCategory" };
+const DIM: Record<Dimension, string> = {
+  requestPath: "pagePath",
+  referrerHostname: "sessionSource",
+  country: "countryId",
+  deviceType: "deviceCategory",
+  browser: "browser",
+  os: "operatingSystem",
+  utmSource: "sessionManualSource",
+  utmCampaign: "sessionCampaignName",
+};
 const gaDate = (d: string) => `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
 
 export const ga4: Provider<Ga4Config> = {
@@ -98,7 +107,7 @@ export const ga4: Provider<Ga4Config> = {
     const r = await report(cfg, {
       dateRanges: [{ startDate: since, endDate: until }],
       dimensions: [{ name: "date" }],
-      metrics: [{ name: "activeUsers" }, { name: "screenPageViews" }, { name: "bounceRate" }],
+      metrics: [{ name: "activeUsers" }, { name: "screenPageViews" }, { name: "bounceRate" }, { name: "averageSessionDuration" }],
       orderBys: [{ dimension: { dimensionName: "date" } }],
       limit: 100000,
       keepEmptyRows: false,
@@ -108,6 +117,7 @@ export const ga4: Provider<Ga4Config> = {
       visitors: Number(x.metricValues[0].value) || 0,
       pageviews: Number(x.metricValues[1].value) || 0,
       bounce_rate: Math.round(Number(x.metricValues[2].value) * 1000) / 10, // GA gives 0–1
+      avg_duration: x.metricValues[3] ? Math.round(Number(x.metricValues[3].value)) : null, // seconds
     }));
     return { points, raw: { rowCount: r.rowCount } };
   },
@@ -122,7 +132,7 @@ export const ga4: Provider<Ga4Config> = {
     return (r.rows ?? []).map((x) => {
       const raw = x.dimensionValues[0].value;
       const key =
-        dim === "referrerHostname" ? refKey(raw) : dim === "deviceType" ? deviceKey(raw) : raw && raw !== "(not set)" ? raw : "(unknown)";
+        dim === "referrerHostname" ? refKey(raw) : dim === "deviceType" ? deviceKey(raw) : raw && raw !== "(not set)" ? raw : dim.startsWith("utm") ? "(none)" : "(unknown)";
       return { key, visitors: Number(x.metricValues[0].value) || 0, pageviews: Number(x.metricValues[1].value) || 0 };
     });
   },

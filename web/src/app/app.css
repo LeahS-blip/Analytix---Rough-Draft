@@ -187,6 +187,30 @@ th+th,td+td{padding-left:16px}
 .wk .wl{font-family:"Fragment Mono",monospace;font-size:11px;color:var(--faint)}
 .wk .wv{font-family:"Fragment Mono",monospace;font-size:11px;color:var(--ink-soft)}
 
+/* explore */
+.ex-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.ex-tabs button{font:600 13px "Host Grotesk",sans-serif;padding:7px 12px;border:1px solid var(--line);border-radius:3px;background:var(--surface);color:var(--ink-soft);cursor:pointer}
+.ex-tabs button[aria-selected="true"]{border-color:var(--accent);background:var(--accent-wash);color:var(--ink)}
+.ex-tabs button:disabled{opacity:.45;cursor:default}
+.ex-n{font-family:"Fragment Mono",monospace;font-size:11px;color:var(--faint);margin-left:4px}
+.ex-bar{display:flex;gap:10px;align-items:center;margin:4px 0 10px;flex-wrap:wrap}
+.ex-bar .input{max-width:320px;flex:1;min-width:180px}
+.ex-bar .btn{margin-left:auto}
+.ex-loading{display:flex;flex-direction:column;gap:10px;padding:10px 0}
+.ex-table tbody tr{cursor:pointer}
+.ex-table tbody tr:hover td,.ex-table tbody tr.sel td{background:var(--accent-wash)}
+.ex-table tbody tr:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.ex-key{position:relative;max-width:420px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ex-bg{position:absolute;left:0;top:4px;bottom:4px;background:var(--accent);opacity:.09;z-index:0}
+.ex-name{position:relative;z-index:1}
+.ex-new{position:relative;z-index:1;font-family:"Fragment Mono",monospace;font-size:10px;color:var(--accent-deep);border:1px solid var(--accent);border-radius:3px;padding:0 5px;margin-left:8px}
+.ex-detail{border:1px solid var(--line-strong);border-radius:3px;padding:16px 18px;margin-bottom:16px;background:var(--surface-2)}
+.ex-title{word-break:break-all}
+.ex-nums{margin-bottom:10px}
+.ex-nums .k-spark{width:120px;height:22px;display:block}
+.ex-link{color:var(--accent-deep);font-weight:600;text-decoration:none}
+.ex-link:hover{text-decoration:underline}
+
 /* screenshot import note */
 .ai-note{font-size:13.5px;color:var(--ink-soft);background:var(--accent-wash);border-left:3px solid var(--accent);border-radius:3px;padding:10px 14px;margin-bottom:14px}
 .ai-note.est{background:color-mix(in srgb,var(--warn) 12%,transparent);border-left-color:var(--warn)}

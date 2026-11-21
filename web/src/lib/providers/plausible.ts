@@ -11,6 +11,10 @@ const DIM: Record<Dimension, string> = {
   referrerHostname: "visit:source",
   country: "visit:country",
   deviceType: "visit:device",
+  browser: "visit:browser",
+  os: "visit:os",
+  utmSource: "visit:utm_source",
+  utmCampaign: "visit:utm_campaign",
 };
 
 type Res = { results?: { dimensions: (string | null)[]; metrics: (number | null)[] }[] };
@@ -46,7 +50,7 @@ export const plausible: Provider<PlausibleConfig> = {
   },
   async fetchDaily(cfg, since, until) {
     const r = await query(cfg, {
-      metrics: ["visitors", "pageviews", "bounce_rate"],
+      metrics: ["visitors", "pageviews", "bounce_rate", "visit_duration"],
       date_range: [since, until],
       dimensions: ["time:day"],
       include: { imports: true },
@@ -57,6 +61,7 @@ export const plausible: Provider<PlausibleConfig> = {
       visitors: Number(x.metrics[0] ?? 0),
       pageviews: x.metrics[1] == null ? null : Number(x.metrics[1]),
       bounce_rate: x.metrics[2] == null || (!x.metrics[0] && !x.metrics[1]) ? null : Number(x.metrics[2]),
+      avg_duration: x.metrics[3] == null || !x.metrics[0] ? null : Number(x.metrics[3]),
     }));
     return { points, raw: r };
   },
@@ -72,7 +77,8 @@ export const plausible: Provider<PlausibleConfig> = {
     });
     return (r.results ?? []).map((x) => {
       const raw = x.dimensions[0];
-      const key = dim === "referrerHostname" ? refKey(raw) : dim === "deviceType" ? deviceKey(raw) : String(raw ?? "(unknown)") || "(unknown)";
+      const key =
+        dim === "referrerHostname" ? refKey(raw) : dim === "deviceType" ? deviceKey(raw) : String(raw ?? "") || (dim.startsWith("utm") ? "(none)" : "(unknown)");
       const visitors = Number(x.metrics[0] ?? 0);
       return { key, visitors, pageviews: isPage ? Number(x.metrics[1] ?? 0) : visitors };
     });
